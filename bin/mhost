@@ -56,18 +56,16 @@ function addme($domain,$login,$DBName) {
 	exec("chmod -R o-rwx /home/$login");
 	exec("/root/bin/passwd-noninteractive.exp $login changeme > /dev/null");
 	echo "Created user.\n";
-	# Create the default directories and permissions for hosting
+	# Create the default directories
 	exec("mkdir /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
 	echo "Created hosting directories.\n";
-	exec("chmod 750 /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
-	echo "Secured hosting directories.\n";
 
-	# grab next port number from database
-	$sslport = 1443;
+	# grab next port number from database (for now random number above 2000)
+	$sslport = rand(2000,30000);
 
 	# Create the virtualhost template for apache2
 	exec("echo '<VirtualHost *:80>
-  ServerName $domain;
+  ServerName $domain
   ServerAdmin webmaster@$domain
   DocumentRoot /home/$login/www
   ErrorLog /home/$login/logs/$domain-error.log
@@ -75,25 +73,37 @@ function addme($domain,$login,$DBName) {
 </VirtualHost>
 
 # SSL PORT IS ASSIGNED, DO NOT CHANGE.
-NameVirtualHost *:$sslport
-<VirtualHost *:$sslport>
-  SSLEngine On
-  SSLCertificateFile /etc/apache2/ssl/apache.pem
-  # Custom Certificates MUST be loaded by admins.
-  #SSLCertificateFile /home/$login/etc/<your cert>.crt
-  #SSLCertificateKeyFile /home/$login/etc/<your cert>.key
-  SSLProtocol all
-  SSLCipherSuite HIGH:MEDIUM
-  ServerName $domain
-  ServerAdmin webmaster@$domain
-  DocumentRoot /home/$login/www
-  ErrorLog /home/$login/logs/ssl-$domain-error.log
-  CustomLog /home/$login/logs/ssl-$domain-access.log
-</VirtualHost>' > /home/$login/etc/apache.conf");
+# Please contact Gabe or Bob for SSL implementation
+# Also note: please touch your log files as set ownerships according
+# ownership is: owner: $login, group: root (chown $login:root <logfile>)
+#NameVirtualHost *:$sslport
+#<VirtualHost *:$sslport>
+#  SSLEngine On
+#  SSLCertificateFile /etc/apache2/ssl/apache.pem
+#  # Custom Certificates MUST be loaded by admins.
+#  #SSLCertificateFile /home/$login/etc/<your cert>.crt
+#  #SSLCertificateKeyFile /home/$login/etc/<your cert>.key
+#  SSLProtocol all
+#  SSLCipherSuite HIGH:MEDIUM
+#  ServerName $domain
+#  ServerAdmin webmaster@$domain
+#  DocumentRoot /home/$login/www
+#  ErrorLog /home/$login/logs/ssl-$domain-error.log
+#  CustomLog /home/$login/logs/ssl-$domain-access.log common
+#</VirtualHost>' > /home/$login/etc/apache.conf");
 	echo "Created inital apache configuration.\n";
 
-	exec("chown $login:www-data /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
-	echo "Changing ownership of hosting directories.\n";
+	# set permissions for hosting
+	exec("chmod -R 750 /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
+	exec("chmod 660 /home/$login/etc/apache.conf");
+	echo "Secured hosting directories.\n";
+	# secure hosting directories
+	exec("chown -R $login:www-data /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
+	# setup logfiles
+	exec("touch /home/$login/logs/$domain-error.log /home/$login/logs/$domain-access.log");
+	exec("chmod 660 /home/$login/logs/*");
+	exec("chown $login:root /home/$login/logs/*");
+	echo "Changed ownership of hosting directories.\n";
 	
 	# link to apache startup directory
 	exec("ln -s /home/$login/etc/apache.conf /etc/apache2/sites-available/$domain");
@@ -114,13 +124,19 @@ NameVirtualHost *:$sslport
 	exec("echo '$login    ALL=(root)    /root/bin/changepass.php' >> /etc/sudoers");
 	echo "Created sudo permission to execute changepass.\n";
 
+	# enable the website
+	exec("a2ensite $domain;/etc/init.d/apache2 reload");
+	
 	echo "done!\n\n";
 	echo "\n\nLogin username:   $login\nDB Username:      $DBName\nDB Name:          $DBName\nDefault password: changeme\n\n";
-	echo "Be sure to change SSL port, and then run 'a2ensite $login' and '/etc/init.d/apache2 reload'\n";
+	echo "if SSL is needed, custom setup must be done manually.\n\n";
 }
 
 # delete a user account
 function deleteme($domain,$login,$DBName) {
+	# shutdown the website
+	exec("a2dissite $domain");
+
 	# delete the user account
 	exec("deluser $login");
 	echo "Deleted user.\n";
