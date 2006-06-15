@@ -120,7 +120,7 @@ function addme($domain,$login,$DBName) {
 	echo "Created hosted site database user/pass.\n";
 
 	# add user to their own sudo users group
-	exec("echo '$login    ALL=(root)    /root/bin/changepass.php' >> /etc/sudoers");
+	exec("echo '$login    ALL=(root)    /root/bin/change_pass.php' >> /etc/sudoers");
 	echo "Created sudo permission to execute changepass.\n";
 
 	# enable the website
