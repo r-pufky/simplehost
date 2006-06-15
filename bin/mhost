@@ -14,7 +14,6 @@ if( $_SERVER['argc'] != 3 ) {
 	# grab options, and standardize
 	$action = strtolower($argv[1]);
 	$domain = strtolower($argv[2]);
-
 	# login name - replace . with -'s, remove spaces if any
 	$login = str_replace(" ","",str_replace(".","-",$domain));
 	# database name - replace - with _'s, only _ will work
@@ -44,7 +43,6 @@ function error($fatal,$message) {
 # add new user account information
 function addme($domain,$login,$DBName) {
 	global $fatal;
-	
 	# verify that the user does not exist
 	if( file_exists("/home/$login") ) {
 		error($fatal,"user $login already exists for domain $domain");
@@ -64,7 +62,6 @@ function addme($domain,$login,$DBName) {
 
 	# grab next port number from database (for now random number above 2000)
 	$sslport = rand(2000,30000);
-
 	# Create the virtualhost template for apache2
 	exec("echo '<VirtualHost *:80>
   ServerName $domain

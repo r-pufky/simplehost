@@ -1,0 +1,4 @@
+#!/bin/sh
+# Opens the current users www directory for web reading.
+user=`whoami`
+chgrp -R www-data /home/$user/www/
