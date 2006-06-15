@@ -49,11 +49,13 @@ function addme($domain,$login,$DBName) {
 	if( file_exists("/home/$login") ) {
 		error($fatal,"user $login already exists for domain $domain");
 	}
-	
+
 	# Create the user account and set default password / permissions
 	exec("adduser --disabled-login --gecos '$domain' $login");
 	exec("addgroup $login www-data");
+	# remove permissions for everyone else on the home directory, except the root directory (for apache)
 	exec("chmod -R o-rwx /home/$login");
+	exec("chmod o+rx /home/$login");
 	exec("/root/bin/passwd-noninteractive.exp $login changeme > /dev/null");
 	echo "Created user.\n";
 	# Create the default directories
