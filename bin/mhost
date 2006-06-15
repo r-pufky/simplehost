@@ -1,0 +1,151 @@
+#!/usr/bin/php4
+<?
+# constant for "fatal" error
+$fatal = true;
+
+# we must be root to run this script
+if( exec("whoami") != "root" ) {
+	error($fatal,"Must be root to run this script.");
+}
+# if no command line options are given.
+if( $_SERVER['argc'] != 3 ) {
+	error($fatal,"Invalid command line arguments.");
+} else {
+	# grab options, and standardize
+	$action = strtolower($argv[1]);
+	$domain = strtolower($argv[2]);
+
+	# login name - replace . with -'s, remove spaces if any
+	$login = str_replace(" ","",str_replace(".","-",$domain));
+	# database name - replace - with _'s, only _ will work
+	$DBName = str_replace("-","_",$login);
+	
+	# are we adding, deleting, or an idiot?
+	switch($action) {
+		case "add" : addme($domain,$login,$DBName);break;
+		case "delete" : deleteme($domain,$login,$DBName);break;
+		default : error($fatal,"Invalid command line arguments.");
+	}
+}
+
+# print out error/warning messages
+function error($fatal,$message) {
+	# log entry to the database (date, time, message)
+	
+	# print message
+	if( $fatal ) {
+		print "\nError: $message\n\n";
+	} else {
+		print "\nWarning: $message\n";
+	}
+	die("Usage:\n\tmhost [add|delete] [top-level domain name]\n\ttop-level domain name is the root-level domain:\n\t\twww.abc.com --enter-this-> 'abc.com'\n\t\tbcd.com --enter-this-> 'bcd.com'\n\nNO hosting accounts modified.\n\n");
+}
+
+# add new user account information
+function addme($domain,$login,$DBName) {
+	global $fatal;
+	
+	# verify that the user does not exist
+	if( file_exists("/home/$login") ) {
+		error($fatal,"user $login already exists for domain $domain");
+	}
+	
+	# Create the user account and set default password / permissions
+	exec("adduser --disabled-login --gecos '$domain' $login");
+	exec("addgroup $login www-data");
+	exec("chmod -R o-rwx /home/$login");
+	exec("/root/bin/passwd-noninteractive.exp $login changeme > /dev/null");
+	echo "Created user.\n";
+	# Create the default directories and permissions for hosting
+	exec("mkdir /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
+	echo "Created hosting directories.\n";
+	exec("chmod 750 /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
+	echo "Secured hosting directories.\n";
+
+	# grab next port number from database
+	$sslport = 1443;
+
+	# Create the virtualhost template for apache2
+	exec("echo '<VirtualHost *:80>
+  ServerName $domain;
+  ServerAdmin webmaster@$domain
+  DocumentRoot /home/$login/www
+  ErrorLog /home/$login/logs/$domain-error.log
+  CustomLog /home/$login/logs/$domain-access.log common
+</VirtualHost>
+
+# SSL PORT IS ASSIGNED, DO NOT CHANGE.
+NameVirtualHost *:$sslport
+<VirtualHost *:$sslport>
+  SSLEngine On
+  SSLCertificateFile /etc/apache2/ssl/apache.pem
+  # Custom Certificates MUST be loaded by admins.
+  #SSLCertificateFile /home/$login/etc/<your cert>.crt
+  #SSLCertificateKeyFile /home/$login/etc/<your cert>.key
+  SSLProtocol all
+  SSLCipherSuite HIGH:MEDIUM
+  ServerName $domain
+  ServerAdmin webmaster@$domain
+  DocumentRoot /home/$login/www
+  ErrorLog /home/$login/logs/ssl-$domain-error.log
+  CustomLog /home/$login/logs/ssl-$domain-access.log
+</VirtualHost>' > /home/$login/etc/apache.conf");
+	echo "Created inital apache configuration.\n";
+
+	exec("chown $login:www-data /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
+	echo "Changing ownership of hosting directories.\n";
+	
+	# link to apache startup directory
+	exec("ln -s /home/$login/etc/apache.conf /etc/apache2/sites-available/$domain");
+	echo "Linked apache configuration to main server.\n";
+
+	# grab the root password for mysql functions
+	require("config.inc.php");
+
+	# create the mysql databases
+	exec("mysql -u root -p$pass -e 'create database $DBName'");
+	echo "Created hosted site database.\n";
+	
+	# command to add a new user, and priv's to that database
+	exec("mysql -u root -p$pass -e \"grant all privileges on $DBName.* to '$DBName'@'localhost' identified by 'changeme'\"");
+	echo "Created hosted site database user/pass.\n";
+
+	# add user to their own sudo users group
+	exec("echo '$login    ALL=(root)    /root/bin/changepass.php' >> /etc/sudoers");
+	echo "Created sudo permission to execute changepass.\n";
+
+	echo "done!\n\n";
+	echo "\n\nLogin username:   $login\nDB Username:      $DBName\nDB Name:          $DBName\nDefault password: changeme\n\n";
+	echo "Be sure to change SSL port, and then run 'a2ensite $login' and '/etc/init.d/apache2 reload'\n";
+}
+
+# delete a user account
+function deleteme($domain,$login,$DBName) {
+	# delete the user account
+	exec("deluser $login");
+	echo "Deleted user.\n";
+
+	# delete the home directory (disable in production)
+	exec("rm -rf /home/$login");
+	echo "Deleted home directory.\n";
+
+	# delete apache2 link
+	exec("rm /etc/apache2/sites-available/$domain");
+	echo "Deleted apache2 configuration.\n";
+
+	# grab the root password
+	require("config.inc.php");
+	
+	# delete the user database / user, and reload mysql
+	exec("mysql -u root -p$pass -e 'drop database $DBName'");
+	exec("mysql -u root -p$pass -e \"delete from mysql.user where Host='localhost' and User='$DBName'\"");
+	exec("mysql -u root -p$pass -e \"flush privileges\"");
+	echo "Deleted database information.\n";
+
+	# Delete the user from the sudo file
+	exec("cat /etc/sudoers | grep -v $login > /etc/sudoers");
+	echo "Deleted sudo permission to execute changepass.\n";
+
+	echo "done!\n\n";
+}
+?>

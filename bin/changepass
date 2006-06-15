@@ -1,0 +1,4 @@
+#!/bin/sh
+# wraps changepass with the current useraname and passes to sudo
+# run sudo for password change
+sudo /root/bin/changepass.php `whoami`

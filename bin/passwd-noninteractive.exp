@@ -1,0 +1,29 @@
+#!/usr/bin/expect -f
+# Usage: passwd-noninteractive.exp username newpasswd
+#
+# Robert Pufky
+# 2006-05-08
+#
+# Gets around the lack of the --stdin option from 
+# passwd in debian
+
+set force_conservative 1  ;# set to 1 to force conservative mode even if
+                          ;# script wasn't run conservatively originally
+if {$force_conservative} {
+  set send_slow {1 .1}
+  proc send {ignore arg} {
+    # must sleep for a tenth of a second to prevent timing errors
+    sleep .1
+    exp_send -s -- $arg
+  }
+}
+
+set timeout -1
+spawn passwd [lrange $argv 0 0]
+match_max 100000
+expect -exact "Enter new UNIX password: "
+send -- "[lrange $argv 1 1]\r"
+expect -exact "\r
+Retype new UNIX password: "
+send -- "[lrange $argv 1 1]\r"
+expect eof

@@ -1,0 +1,4 @@
+Required packages: sudo, expect
+
+copy changepass to /usr/local/bin
+copy mysql_local to /usr/local/bin

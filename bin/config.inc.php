@@ -1,0 +1,3 @@
+<?
+$pass = 'ENTER_PASSWORD';
+?>
