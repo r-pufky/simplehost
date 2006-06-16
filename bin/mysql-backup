@@ -10,22 +10,46 @@
 
 #------ Modify These Only -----------------
 # path to store the backup when completed.
-$masterstore = "/root/Backup/mysql/";
+$masterstore = "/root/backup/mysql/";
 # path to programs used (zip, mysqldump) (no ending /)
 $path = "/usr/bin";
 #------------------------------------------
 
-
 # get current run date.
 $date = date("Y-m-d");
 
-# temporary directory to store dump
-$dir = "/tmp/$date";
+# grab a list of all the users on the system and import them
+exec("ls -1 /home > /tmp/userlist");
+$userlist = file("/tmp/userlist");
 
-# if the directory doesn't exist, create it
-if (!is_dir($dir)) {
-	mkdir($dir,0700);
+# load the password
+require_once("config.inc.php");
+
+# go through each user and backup their specific db's to their directory
+# ignore gabe and bob accounts - they are personal administrator accounts
+foreach( $userlist as $user ) {
+	# modify username for db name
+	$dbname = str_replace("-","_",$user);
+	
+	# create a directory and secure it
+	$dir = "/tmp/$date";
+	if( !is_dir($dir) ) { mkdir($dir,0700); }
+
+	# connect to the data base
+	mysql_connect("localhost", "root", "$pass");
+
+	# dump their db to the tempdirectory, package, store and secure db
+	$userstore = "/home/$user/backup/";
+	`$path/mysqldump -u root -p$pass  > $dir/$dbname.dump`;
+	`cd /tmp/; $path/zip $date $date/*`;
+	`mv -f /tmp/$date.zip $userstore; chmod 400 $userstore$date.zip; chown $user:$user $userstore$date.zip`;
+
+	# clean up temp diectory
+	`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
 }
+
+# now just have a master backup incase
+if (!is_dir($dir)) { mkdir($dir,0700); }
 
 # connect to the data base
 mysql_connect("localhost", "root", "$pass");
@@ -34,21 +58,16 @@ mysql_connect("localhost", "root", "$pass");
 $query = "SHOW databases";
 $result = mysql_query($query);
 
-
-#mysql -u root -p <pass> dbname < [filename] ?
-
 # go through the list and dump those.
 while($row = mysql_fetch_array($result)) {
-	# dump the datanase and zip it up.
-	`$path/mysqldump -u root -p$pass $row[0] > $dir/$row[0].dump`;
+        # dump the datanase and zip it up.
+        `$path/mysqldump -u root -p$pass $row[0] > $dir/$row[0].dump`;
 }
 
 # after done, compress the dump and store it
-# make it read only for not accidental deletions
-$temp = "$path/zip /tmp/$date $dir/*";
-`$temp; mv -f /tmp/$date.zip $store; chmod 400 $store$date.zip;`;
-
+`cd /tmp/; $path/zip $date $date/*`;
+`mv -f /tmp/$date.zip $masterstore; chmod 400 $masterstore$date.zip; chown root:root $masterstore$date.zip`;
 # clean up temp diectory
-`rm -rf /tmp/$date.zip; rm -rf /tmp/$date`;
+`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
 
 ?>
