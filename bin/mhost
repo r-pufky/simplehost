@@ -97,11 +97,12 @@ function addme($domain,$login,$DBName) {
 	exec("chmod 660 /home/$login/etc/apache.conf");
 	echo "Secured hosting directories.\n";
 	# secure hosting directories
-	exec("chown -R $login:www-data /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
+	exec("chown -R $login:www-data /home/$login/www /home/$login/etc");
+	exec("chown -R $login:$login /home/$login/backup /home/$login/logs");
 	# setup logfiles
 	exec("touch /home/$login/logs/$domain-error.log /home/$login/logs/$domain-access.log");
 	exec("chmod 660 /home/$login/logs/*");
-	exec("chown $login:root /home/$login/logs/*");
+	#exec("chown $login:root /home/$login/logs/*");
 	echo "Changed ownership of hosting directories.\n";
 	
 	# link to apache startup directory
