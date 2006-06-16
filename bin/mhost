@@ -69,6 +69,7 @@ function addme($domain,$login,$DBName) {
   DocumentRoot /home/$login/www
   ErrorLog /home/$login/logs/$domain-error.log
   CustomLog /home/$login/logs/$domain-access.log common
+  Options none
 </VirtualHost>
 
 # SSL PORT IS ASSIGNED, DO NOT CHANGE.
@@ -101,8 +102,8 @@ function addme($domain,$login,$DBName) {
 	exec("chown -R $login:$login /home/$login/backup /home/$login/logs");
 	# setup logfiles
 	exec("touch /home/$login/logs/$domain-error.log /home/$login/logs/$domain-access.log");
-	exec("chmod 660 /home/$login/logs/*");
-	#exec("chown $login:root /home/$login/logs/*");
+	exec("chmod 600 /home/$login/logs/*");
+	exec("chown $login:$login /home/$login/logs/*");
 	echo "Changed ownership of hosting directories.\n";
 	
 	# link to apache startup directory
