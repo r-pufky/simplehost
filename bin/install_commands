@@ -6,6 +6,7 @@ cp change_pass /usr/local/bin
 cp mysql_local /usr/local/bin
 cp create_subdomain /usr/local/bin
 cp open_for_web /usr/local/bin
+cp mysql_import /usr/local/bin
 
 # secure relavent files
 chmod 700 change_pass.php
@@ -13,4 +14,4 @@ chmod 700 install_commands
 chmod 700 mhost
 chmod 700 passwd-noninteractive.exp
 
-echo -e -n "Insert into /etc/motd if not already:\n'change_pass'      - change your user account password for all services\n'mysql_local'      - launch mysqladmin (command line tool)\n'create_subdomain' - create a subdomain off of your domain\n'open_for_web'     - Enabled web access to newly created files/directories in www/"
+echo -e -n "Insert into /etc/motd if not already:\n'change_pass'      - change your user account password for all services\n'mysql_local'      - launch mysqladmin\n'mysql_import'     - import mysql database dumps into your database\n'create_subdomain' - create a subdomain off of your domain\n'open_for_web'     - Enabled web access to newly created files/directories in www/"
