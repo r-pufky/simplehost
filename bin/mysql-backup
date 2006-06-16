@@ -29,7 +29,10 @@ require_once("config.inc.php");
 # go through each user and backup their specific db's to their directory
 # ignore gabe and bob accounts - they are personal administrator accounts
 foreach( $userlist as $user ) {
+	$user = str_replace("\n","",$user);
+	echo "$user";
 	if( $user != "gps" && $user != "bob" ) {
+		echo "'$user'";
 		# modify username for db name
 		$dbname = str_replace("-","_",$user);
 	
@@ -42,12 +45,17 @@ foreach( $userlist as $user ) {
 
 		# dump their db to the tempdirectory, package, store and secure db
 		$userstore = "/home/$user/backup/";
+		echo ".";
 		`$path/mysqldump -u root -p$pass $dbname > $dir/$dbname.dump`;
+		echo ".";
 		`cd /tmp/; $path/zip $date $date/*`;
+		echo ".";
 		`mv -f /tmp/$date.zip $userstore; chmod 400 $userstore$date.zip; chown $user:$user $userstore$date.zip`;
+		echo ".";
 
 		# clean up temp diectory
 		`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
+		echo ".\n";
 	}
 }
 
