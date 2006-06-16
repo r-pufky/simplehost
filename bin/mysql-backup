@@ -21,6 +21,7 @@ $date = date("Y-m-d");
 # grab a list of all the users on the system and import them
 exec("ls -1 /home > /tmp/userlist");
 $userlist = file("/tmp/userlist");
+exec("rm -f /tmp/userlist");
 
 # load the password
 require_once("config.inc.php");
@@ -28,46 +29,37 @@ require_once("config.inc.php");
 # go through each user and backup their specific db's to their directory
 # ignore gabe and bob accounts - they are personal administrator accounts
 foreach( $userlist as $user ) {
-	# modify username for db name
-	$dbname = str_replace("-","_",$user);
+	if( $user != "gps" && $user != "bob" ) {
+		# modify username for db name
+		$dbname = str_replace("-","_",$user);
 	
-	# create a directory and secure it
-	$dir = "/tmp/$date";
-	if( !is_dir($dir) ) { mkdir($dir,0700); }
+		# create a directory and secure it
+		$dir = "/tmp/$date";
+		if( !is_dir($dir) ) { mkdir($dir,0700); }
 
-	# connect to the data base
-	mysql_connect("localhost", "root", "$pass");
+		# connect to the data base
+		mysql_connect("localhost", "root", "$pass");
 
-	# dump their db to the tempdirectory, package, store and secure db
-	$userstore = "/home/$user/backup/";
-	`$path/mysqldump -u root -p$pass  > $dir/$dbname.dump`;
-	`cd /tmp/; $path/zip $date $date/*`;
-	`mv -f /tmp/$date.zip $userstore; chmod 400 $userstore$date.zip; chown $user:$user $userstore$date.zip`;
+		# dump their db to the tempdirectory, package, store and secure db
+		$userstore = "/home/$user/backup/";
+		`$path/mysqldump -u root -p$pass $dbname > $dir/$dbname.dump`;
+		`cd /tmp/; $path/zip $date $date/*`;
+		`mv -f /tmp/$date.zip $userstore; chmod 400 $userstore$date.zip; chown $user:$user $userstore$date.zip`;
 
-	# clean up temp diectory
-	`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
+		# clean up temp diectory
+		`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
+	}
 }
 
 # now just have a master backup incase
 if (!is_dir($dir)) { mkdir($dir,0700); }
 
-# connect to the data base
-mysql_connect("localhost", "root", "$pass");
-
-# grab a list of all the databases
-$query = "SHOW databases";
-$result = mysql_query($query);
-
-# go through the list and dump those.
-while($row = mysql_fetch_array($result)) {
-        # dump the datanase and zip it up.
-        `$path/mysqldump -u root -p$pass $row[0] > $dir/$row[0].dump`;
-}
+# dump the datanase and zip it up.
+`$path/mysqldump -u root -p$pass --all-databases > $dir/databases.dump`;
 
 # after done, compress the dump and store it
 `cd /tmp/; $path/zip $date $date/*`;
 `mv -f /tmp/$date.zip $masterstore; chmod 400 $masterstore$date.zip; chown root:root $masterstore$date.zip`;
 # clean up temp diectory
 `rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
-
 ?>
