@@ -1,4 +1,3 @@
 Required packages: sudo, expect
 
-run install_commands to setup the system.
-Will need tweaking for user prompting.
+run 'install_commands' to setup the system.

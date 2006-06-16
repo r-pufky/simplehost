@@ -1,0 +1,54 @@
+#!/usr/bin/php4 -q
+<?
+# Copyright 2006, Robert Pufky
+# Written 6-16-2006 - Backups up respective mysql db's to the owners backup directory
+# also creates a master mysql backup of the entire db
+
+# to restore a db, enter the commnad:
+# mysql -u root -p [pass] <dbname to restore> < [file to restore from];
+# -- db name must be created before the data is imported.
+
+#------ Modify These Only -----------------
+# path to store the backup when completed.
+$masterstore = "/root/Backup/mysql/";
+# path to programs used (zip, mysqldump) (no ending /)
+$path = "/usr/bin";
+#------------------------------------------
+
+
+# get current run date.
+$date = date("Y-m-d");
+
+# temporary directory to store dump
+$dir = "/tmp/$date";
+
+# if the directory doesn't exist, create it
+if (!is_dir($dir)) {
+	mkdir($dir,0700);
+}
+
+# connect to the data base
+mysql_connect("localhost", "root", "$pass");
+
+# grab a list of all the databases
+$query = "SHOW databases";
+$result = mysql_query($query);
+
+
+#mysql -u root -p <pass> dbname < [filename] ?
+
+# go through the list and dump those.
+while($row = mysql_fetch_array($result)) {
+	# dump the datanase and zip it up.
+	`$path/mysqldump -u root -p$pass $row[0] > $dir/$row[0].dump`;
+}
+
+# after done, compress the dump and store it
+# make it read only for not accidental deletions
+$temp = "$path/zip /tmp/$date $dir/*";
+`$temp; mv -f /tmp/$date.zip $store; chmod 400 $store$date.zip;`;
+
+# clean up temp diectory
+`rm -rf /tmp/$date.zip; rm -rf /tmp/$date`;
+
+?>
