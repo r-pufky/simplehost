@@ -1,0 +1,82 @@
+#!/usr/bin/php4
+<?
+# Robert Pufky
+# 2006-06-16 - displays help files for host commands
+
+$fatal = true;  //constant for fatal error
+$user = exec("whoami");
+
+# if no command line options are given.
+if( $_SERVER['argc'] != 2 ) {
+	error($fatal,"Invalid command line arguments.");
+} else {
+	# what subdomain are we creating
+	$command = strtolower($argv[1]);
+
+	# print the respective help file
+	switch($command) {
+		case "change_pass" : { change_pass($user); } break;
+		case "create_subdomain" : { create_subdomain($user); } break;
+		case "host_help" : { error($fatal,"Silly, you can't do that."); } break;
+		case "mysql_import" : { mysql_import(); } break;
+		case "mysql_local" : { mysql_local($user); } break;
+		case "open_for_web" : { open_for_web($user); } break;
+	}	
+}
+
+# print out help for change_pass
+function change_pass($user) {
+	echo "\n\nchange_pass:";
+	echo "\n\tCommand: change_pass";
+	echo "\n\n\tFuntionality:\n\t\tChanges your password for your account across all systems.";
+	echo "\n\n\tHow to use:\n\t\t1) Create a passwd file in your home directory\n\t\t\ttouch /home/$user/passwd";
+	echo "\n\t\t2) Secure the file so only you can read/write it\n\t\t\tchmod 0600 /home/$user/passwd";
+	echo "\n\t\t3) Enter your password in this file using your favorite editor";
+	echo "\n\t\t4) Lockdown the file so only you can read it\n\t\t\tchmod 0400 /home/$user/passwd";
+	echo "\n\t\t5) Execute the change_pass program\n\t\t\tNote: The password it prompts for is your CURRENT password";
+	echo "\n\t\t6) If successful, delete the passwd file\n\t\t\trm -f /home/$user/passwd\n\n";
+}
+
+# print out help for create_subdomain
+function create_subdomain($user) {
+        echo "\n\ncreate_subdomain:";
+        echo "\n\tCommand: create_subdomain <subdomain>";
+	echo "\n\n\tArguments:\n\t\t<subdomain> - the subdomain name you wish to create.\n\t\t\ti.e.: testing.yourdomain.com\n\t\t\t<subdomain> would be 'testing'";
+        echo "\n\n\tFuntionality:\n\t\tCreates an initial subdomain configuration on your domain";
+        echo "\n\n\tRequires:\n\t\ta non-pre-existing directory in your /home/$user/www/ of the subdomain name\n\n";
+}
+
+# print out help for mysql_import
+function mysql_import() {
+        echo "\n\nmysql_import:";
+        echo "\n\tCommand: mysql_import <mysql dump file>";
+	echo "\n\n\tArguments:\n\t\t<mysql dump file> - a mysql formatted database file to import";
+	echo "\n\n\tFuntionality:\n\t\tImports the dump file into your database.  Successful importing will NOT give any feedback.";
+        echo "\n\n\tRequires:\n\t\tThe database file must be in mysql format.\n\n";
+}
+
+# print out help for mysql_local
+function mysql_local($user) {
+	echo "\n\nmysql_local:";
+	echo "\n\tCommand: mysql_local";
+	echo "\n\n\tFunctionality:\n\t\tConnects to $user's database on the mysql user interface\n\n";
+}
+
+# print out help for open_for_web
+function open_for_web($user) {
+	echo "\n\nopen_for_web:";
+        echo "\n\tCommand: open_for_web";
+        echo "\n\n\tFuntionality:\n\t\tThis will ensure that all files off in /home/$user/www/ will be web-accessible.\n\n";
+}
+
+# print out error/warning messages
+function error($fatal,$message) {
+	# print message
+	if( $fatal ) {
+		print "\nError: $message\n\n";
+	} else {
+		print "\nWarning: $message\n";
+	}
+	die("Usage:\n\thost_help <host_command>\n\n\tDisplays help file for specific hosting commands.\n\n");
+}
+?>
