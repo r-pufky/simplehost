@@ -21,6 +21,8 @@ if( $_SERVER['argc'] != 2 ) {
 		case "mysql_import" : { mysql_import(); } break;
 		case "mysql_local" : { mysql_local($user); } break;
 		case "open_for_web" : { open_for_web($user); } break;
+		case "gallery2_pass" : ( gallery2_pass($user); } break;
+		default : { error(!$fatal,"Invalid command line argument"); }
 	}	
 }
 
@@ -34,6 +36,19 @@ function change_pass($user) {
 	echo "\n\t\t3) Enter your password in this file using your favorite editor";
 	echo "\n\t\t4) Lockdown the file so only you can read it\n\t\t\tchmod 0400 /home/$user/passwd";
 	echo "\n\t\t5) Execute the change_pass program\n\t\t\tNote: The password it prompts for is your CURRENT password";
+	echo "\n\t\t6) If successful, delete the passwd file\n\t\t\trm -f /home/$user/passwd\n\n";
+}
+
+# print out help for gallery2 password change
+function gallery2_pass($user) {
+	echo "\n\ngallery_pass:";
+	echo "\n\tCommand: gallery2_pass";
+	echo "\n\n\tFuntionality:\n\t\tChanges your database password for your gallery2 installation.  This SHOULD BE your domain database password.";
+	echo "\n\n\tHow to use:\n\t\t1) Create a passwd file in your home directory\n\t\t\ttouch /home/$user/passwd";
+	echo "\n\t\t2) Secure the file so only you can read/write it\n\t\t\tchmod 0600 /home/$user/passwd";
+	echo "\n\t\t3) Enter your password in this file using your favorite editor";
+	echo "\n\t\t4) Lockdown the file so only you can read it\n\t\t\tchmod 0400 /home/$user/passwd";
+	echo "\n\t\t5) Execute the gallery2_pass program";
 	echo "\n\t\t6) If successful, delete the passwd file\n\t\t\trm -f /home/$user/passwd\n\n";
 }
 
