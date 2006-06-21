@@ -21,7 +21,7 @@ if( $_SERVER['argc'] != 2 ) {
 		case "mysql_import" : { mysql_import(); } break;
 		case "mysql_local" : { mysql_local($user); } break;
 		case "open_for_web" : { open_for_web($user); } break;
-		case "gallery2_pass" : ( gallery2_pass($user); } break;
+		case "gallery2_pass" : { gallery2_pass($user); } break;
 		default : { error(!$fatal,"Invalid command line argument"); }
 	}	
 }

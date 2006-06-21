@@ -23,7 +23,7 @@ $username = exec("whoami");
 # figure out where the password file is
 $passpath = "/home/$username/passwd";
 # file path for gallery2
-$filepath = "/home/$username/www/gallery2/config.php"
+$filepath = "/home/$username/www/gallery2/config.php";
 
 # if we are trying to change the root password, die.
 if( $username == "root" ) {
@@ -56,7 +56,7 @@ if( !is_writable($filepath) ) { error($fatal,"$filepath is not set for writing. 
 if( !$fpipe = fopen($filepath,'w') ) { error($fatal,"Cannot open $filepath for writing.  Make sure proper permissions are set."); }
 
 foreach ($config as $line) {
-	if( strpos($line, "$storeConfig['password'] = '") === false ) {
+	if( strpos($line, "\$storeConfig['password'] = '") === false ) {
 		# we don't have the password line, just write it
 		if( fwrite($fpipe, $line) === false ) { error($fatal,"Cannot write to $filepath.  Something went seriously wrong."); }
 	} else {
@@ -66,7 +66,7 @@ foreach ($config as $line) {
 }
 
 # close the file and cleanup permissions / directory
-fclose($filepath);
+fclose($fpipe);
 exec("rm -f /home/$username/gallery.config.backup");
 exec("chmod 640 $filepath");
 exec("chown $username:www-data $filepath");
