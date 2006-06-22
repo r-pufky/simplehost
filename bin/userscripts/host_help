@@ -1,19 +1,19 @@
 #!/usr/bin/php4
 <?
-# Robert Pufky
-# 2006-06-16 - displays help files for host commands
+// Robert Pufky
+// 2006-06-16 - displays help files for host commands
 
 $fatal = true;  //constant for fatal error
 $user = exec("whoami");
 
-# if no command line options are given.
+// if no command line options are given.
 if( $_SERVER['argc'] != 2 ) {
 	error($fatal,"Invalid command line arguments.");
 } else {
-	# what subdomain are we creating
+	// what subdomain are we creating
 	$command = strtolower($argv[1]);
 
-	# print the respective help file
+	// print the respective help file
 	switch($command) {
 		case "change_pass" : { change_pass($user); } break;
 		case "create_subdomain" : { create_subdomain($user); } break;
@@ -26,7 +26,7 @@ if( $_SERVER['argc'] != 2 ) {
 	}	
 }
 
-# print out help for change_pass
+// print out help for change_pass
 function change_pass($user) {
 	echo "\n\nchange_pass:";
 	echo "\n\tCommand: change_pass";
@@ -39,7 +39,7 @@ function change_pass($user) {
 	echo "\n\t\t6) If successful, delete the passwd file\n\t\t\trm -f /home/$user/passwd\n\n";
 }
 
-# print out help for gallery2 password change
+// print out help for gallery2 password change
 function gallery2_pass($user) {
 	echo "\n\ngallery_pass:";
 	echo "\n\tCommand: gallery2_pass";
@@ -52,7 +52,7 @@ function gallery2_pass($user) {
 	echo "\n\t\t6) If successful, delete the passwd file\n\t\t\trm -f /home/$user/passwd\n\n";
 }
 
-# print out help for create_subdomain
+// print out help for create_subdomain
 function create_subdomain($user) {
         echo "\n\ncreate_subdomain:";
         echo "\n\tCommand: create_subdomain <subdomain>";
@@ -61,7 +61,7 @@ function create_subdomain($user) {
         echo "\n\n\tRequires:\n\t\ta non-pre-existing directory in your /home/$user/www/ of the subdomain name\n\n";
 }
 
-# print out help for mysql_import
+// print out help for mysql_import
 function mysql_import() {
         echo "\n\nmysql_import:";
         echo "\n\tCommand: mysql_import <mysql dump file>";
@@ -70,23 +70,23 @@ function mysql_import() {
         echo "\n\n\tRequires:\n\t\tThe database file must be in mysql format.\n\n";
 }
 
-# print out help for mysql_local
+// print out help for mysql_local
 function mysql_local($user) {
 	echo "\n\nmysql_local:";
 	echo "\n\tCommand: mysql_local";
 	echo "\n\n\tFunctionality:\n\t\tConnects to $user's database on the mysql user interface\n\n";
 }
 
-# print out help for open_for_web
+// print out help for open_for_web
 function open_for_web($user) {
 	echo "\n\nopen_for_web:";
         echo "\n\tCommand: open_for_web";
         echo "\n\n\tFuntionality:\n\t\tThis will ensure that all files off in /home/$user/www/ will be web-accessible.\n\n";
 }
 
-# print out error/warning messages
+// print out error/warning messages
 function error($fatal,$message) {
-	# print message
+	// print message
 	if( $fatal ) {
 		print "\nError: $message\n\n";
 	} else {

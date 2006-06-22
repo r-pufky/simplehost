@@ -6,6 +6,7 @@ cp userscripts/* /usr/local/bin
 
 # secure relavent files
 chmod 700 config.inc.php
+chmod 600 admindb.dump
 chmod 700 change_pass.php
 chmod 700 install_commands
 chmod 700 mhost

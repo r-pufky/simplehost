@@ -1,168 +1,196 @@
 #!/usr/bin/php4
 <?
-# constant for "fatal" error
-$fatal = true;
+// Copyright 2006, Robert Pufky
+// Written 06-22-2006: Creates hosting accounts for pedro.
 
-# we must be root to run this script
+// constants
+$program = "mhost";
+$die = "Usage:\n\tmhost [add|delete] [top-level domain name]\n\ttop-level domain name is the root-level domain:\n\t\twww.abc.com --enter-this-> 'abc.com'\n\t\tbcd.com --enter-this-> 'bcd.com'\n\nNO hosting accounts modified.\n\n";
+
+// we must be root to run this script
 if( exec("whoami") != "root" ) {
-	error($fatal,"Must be root to run this script.");
-}
-# if no command line options are given.
-if( $_SERVER['argc'] != 3 ) {
-	error($fatal,"Invalid command line arguments.");
-} else {
-	# grab options, and standardize
-	$action = strtolower($argv[1]);
-	$domain = strtolower($argv[2]);
-	# login name - replace . with -'s, remove spaces if any
-	$login = str_replace(" ","",str_replace(".","-",$domain));
-	# database name - replace - with _'s, only _ will work
-	$DBName = str_replace("-","_",$login);
-	
-	# are we adding, deleting, or an idiot?
-	switch($action) {
-		case "add" : addme($domain,$login,$DBName);break;
-		case "delete" : deleteme($domain,$login,$DBName);break;
-		default : error($fatal,"Invalid command line arguments.");
-	}
+	die("Must be root to run this script.\n");
 }
 
-# print out error/warning messages
-function error($fatal,$message) {
-	# log entry to the database (date, time, message)
-	
-	# print message
-	if( $fatal ) {
-		print "\nError: $message\n\n";
-	} else {
-		print "\nWarning: $message\n";
-	}
-	die("Usage:\n\tmhost [add|delete] [top-level domain name]\n\ttop-level domain name is the root-level domain:\n\t\twww.abc.com --enter-this-> 'abc.com'\n\t\tbcd.com --enter-this-> 'bcd.com'\n\nNO hosting accounts modified.\n\n");
+// setup db and logging, and error messaging
+require("config.inc.php");
+
+// figure out what we are doing using the first argument and tell we are running the program
+if( $_SERVER['argc'] != 3 ) { mlog(0,"addme",$fatal,"Invalid command line arguments."); }
+$action = strtolower($argv[1]);
+$domainname = strtolower($argv[2]);
+
+switch($action) {
+	case "add" : addme($domainname);break;
+	case "delete" : deleteme($domainname);break;
+	default : mlog(0,"main",$fatal,"Invalid command line arguments.");
 }
 
-# add new user account information
-function addme($domain,$login,$DBName) {
+// add new user account information
+function addme($domainname) {
 	global $fatal;
-	# verify that the user does not exist
-	if( file_exists("/home/$login") ) {
-		error($fatal,"user $login already exists for domain $domain");
-	}
+	global $pass;
+	
+	mlog(0,"addme",!$fatal,"Adding a host ($domainname) to the system.");
+	
+	// verify domain is not being used
+	$results = mquery("select * from domains where domain='$domainname'");
+	if( mysql_num_rows($results) != 0 ) { mlog(0,"addme",$fatal,"$domainname account already exists!"); }
+		
+	// grab the IP address for the site
+	echo "\n\nEnter site IP address: ";
+	$IP = getinput();
+	// verify that the IP is at least a valid IP
+	if( ip2long($IP) == -1 ) { mlog(0,"addme",$fatal,"The IP address $IP entered is NOT valid."); }
+	
+	// verify IP is not being used
+	$results = mquery("select * from domains where ip='$IP'");
+	if( mysql_num_rows($results) != 0 ) { mlog(0,"addme",$fatal,"The IP address $IP is already in use!"); }
 
-	# Create the user account and set default password / permissions
-	exec("adduser --disabled-login --gecos '$domain' $login");
+	// create login and db names with mysql/bash compatability
+	$login = str_replace(" ","",str_replace(".","-",$domainname));
+	$DBName = str_replace("-","_",$login);
+			 
+	// grab domain information from user
+	echo "\n\nEnter contact e-mail: ";
+	$contactemail = getinput();
+	echo "\n\nEnter contact name: ";
+	$contactname = getinput();
+
+	// update domain db, grab the insert, and log that we did it
+	mquery("insert into domains (domain,ip,contactname,contactemail,password,dbname,dbuser,username,gallery2) values('$domainname','$IP','$contactname','$contactemail','changeme','$DBName','$DBName','$login','N')");
+	mlog(0,"addme",!$fatal,"Created domain $domainname.");
+
+	// insert the default ports to be used
+	$resdom = mysql_fetch_array(mquery("select id from domains where domain='$domainname'"));
+	mquery("insert into ports (did,port) values('" . $resdom['id'] . "','80')");
+	mquery("insert into ports (did,port) values('" . $resdom['id'] . "','443')");
+
+	// Create the user account and set default password / permissions
+	exec("adduser --disabled-login --gecos '$domainname' $login");
 	exec("addgroup $login www-data");
-	# remove permissions for everyone else on the home directory, except the root directory (for apache)
+	// remove permissions for everyone else on the home directory, except the root directory (for apache)
 	exec("chmod -R o-rwx /home/$login");
 	exec("chmod o+rx /home/$login");
 	exec("/root/bin/passwd-noninteractive.exp $login changeme > /dev/null");
 	echo "Created user.\n";
-	# Create the default directories
+	// Create the default directories
 	exec("mkdir /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
 	echo "Created hosting directories.\n";
 
-	# grab next port number from database (for now random number above 2000)
-	$sslport = rand(2000,30000);
-	# Create the virtualhost template for apache2
-	exec("echo '<VirtualHost *:80>
-  ServerName $domain
-  ServerAdmin webmaster@$domain
+	// no longer needed with individual IPS
+	// Create the virtualhost template for apache2
+	exec("echo '<VirtualHost $IP:80>
+  ServerName $domainname
+  ServerAdmin webmaster@$domainname
   DocumentRoot /home/$login/www
-  ErrorLog /home/$login/logs/$domain-error.log
-  CustomLog /home/$login/logs/$domain-access.log common
+  ErrorLog /home/$login/logs/$domainname-error.log
+  CustomLog /home/$login/logs/$domainname-access.log common
   Options none
 </VirtualHost>
 
-# SSL PORT IS ASSIGNED, DO NOT CHANGE.
-# Please contact Gabe or Bob for SSL implementation
-# Also note: please touch your log files as set ownerships according
-# ownership is: owner: $login, group: root (chown $login:root <logfile>)
-#NameVirtualHost *:$sslport
-#<VirtualHost *:$sslport>
-#  SSLEngine On
-#  SSLCertificateFile /etc/apache2/ssl/apache.pem
-#  # Custom Certificates MUST be loaded by admins.
-#  #SSLCertificateFile /home/$login/etc/<your cert>.crt
-#  #SSLCertificateKeyFile /home/$login/etc/<your cert>.key
-#  SSLProtocol all
-#  SSLCipherSuite HIGH:MEDIUM
-#  ServerName $domain
-#  ServerAdmin webmaster@$domain
-#  DocumentRoot /home/$login/www
-#  ErrorLog /home/$login/logs/ssl-$domain-error.log
-#  CustomLog /home/$login/logs/ssl-$domain-access.log common
-#</VirtualHost>' > /home/$login/etc/apache.conf");
+# Note: by default, site uses generic SSL Cert.
+# Remove this line, change and uncomment the .crt & .key lines for custom certificate
+<VirtualHost $IP:443>
+  SSLEngine On
+  SSLCertificateFile /etc/apache2/ssl/apache.pem
+  # Custom Certificates MUST be loaded by admins.
+  #SSLCertificateFile /home/$login/etc/<your cert>.crt
+  #SSLCertificateKeyFile /home/$login/etc/<your cert>.key
+  SSLProtocol all
+  SSLCipherSuite HIGH:MEDIUM
+  ServerName $domainname
+  ServerAdmin webmaster@$domainname
+  DocumentRoot /home/$login/www
+  ErrorLog /home/$login/logs/ssl-$domainname-error.log
+  CustomLog /home/$login/logs/ssl-$domainname-access.log common
+</VirtualHost>' > /home/$login/etc/apache.conf");
 	echo "Created inital apache configuration.\n";
 
-	# set permissions for hosting
+	// set permissions for hosting
 	exec("chmod -R 750 /home/$login/backup /home/$login/www /home/$login/logs /home/$login/etc");
 	exec("chmod 660 /home/$login/etc/apache.conf");
 	echo "Secured hosting directories.\n";
-	# secure hosting directories
+	// secure hosting directories
 	exec("chown -R $login:www-data /home/$login/www /home/$login/etc");
 	exec("chown -R $login:$login /home/$login/backup /home/$login/logs");
-	# setup logfiles
-	exec("touch /home/$login/logs/$domain-error.log /home/$login/logs/$domain-access.log");
+	// setup logfiles
+	exec("touch /home/$login/logs/$domainname-error.log /home/$login/logs/$domain-access.log");
+	exec("touch /home/$login/logs/ssl-$domainname-error.log /home/$login/logs/ssl-$domain-access.log");
 	exec("chmod 600 /home/$login/logs/*");
 	exec("chown $login:$login /home/$login/logs/*");
 	echo "Changed ownership of hosting directories.\n";
 	
-	# link to apache startup directory
-	exec("ln -s /home/$login/etc/apache.conf /etc/apache2/sites-available/$domain");
+	// link to apache startup directory
+	exec("ln -s /home/$login/etc/apache.conf /etc/apache2/sites-available/$domainname");
 	echo "Linked apache configuration to main server.\n";
 
-	# grab the root password for mysql functions
-	require("config.inc.php");
-
-	# create the mysql databases
+	// create the mysql databases
 	exec("mysql -u root -p$pass -e 'create database $DBName'");
 	echo "Created hosted site database.\n";
 	
-	# command to add a new user, and priv's to that database
+	// command to add a new user, and priv's to that database
 	exec("mysql -u root -p$pass -e \"grant all privileges on $DBName.* to '$DBName'@'localhost' identified by 'changeme'\"");
 	echo "Created hosted site database user/pass.\n";
 
-	# add user to their own sudo users group
+	// add user to their own sudo users group
 	exec("echo '$login    ALL=(root)    /root/bin/change_pass.php' >> /etc/sudoers");
 	echo "Created sudo permission to execute changepass.\n";
 
-	# enable the website
-	exec("a2ensite $domain;/etc/init.d/apache2 reload");
-	
-	echo "done!\n\n";
+	// add user to apache ports file
+	exec("echo -e -n 'Listen $IP:80\nListen $IP:443' >> /etc/apache2/ports.conf");
+
+	// enable the website
+	echo "Enabling the website... ";
+	exec("a2ensite $domainname;/etc/init.d/apache2 reload");
+	echo "done.\n\n";
 	echo "\n\nLogin username:   $login\nDB Username:      $DBName\nDB Name:          $DBName\nDefault password: changeme\n\n";
-	echo "if SSL is needed, custom setup must be done manually.\n\n";
 }
 
-# delete a user account
-function deleteme($domain,$login,$DBName) {
-	# shutdown the website
-	exec("a2dissite $domain");
+// delete a user account
+function deleteme($domainname) {
+	global $fatal;
+	global $pass;
+	
+	// grab domain information
+	$resdom = mysql_fetch_array(mquery("select * from domains where domain='$domainname'"));
+	
+	// shutdown the website
+	exec("a2dissite $domainname");
 
-	# delete the user account
-	exec("deluser $login");
+	// delete the user account
+	exec("deluser " . $resdom['username']);
 	echo "Deleted user.\n";
 
-	# delete the home directory (disable in production)
-	exec("rm -rf /home/$login");
+	// delete the home directory (disable in production)
+	exec("rm -rf /home/" . $resdom['username']);
 	echo "Deleted home directory.\n";
 
-	# delete apache2 link
-	exec("rm /etc/apache2/sites-available/$domain");
+	// delete apache2 link
+	exec("rm /etc/apache2/sites-available/$domainname");
 	echo "Deleted apache2 configuration.\n";
 
-	# grab the root password
-	require("config.inc.php");
-	
-	# delete the user database / user, and reload mysql
-	exec("mysql -u root -p$pass -e 'drop database $DBName'");
-	exec("mysql -u root -p$pass -e \"delete from mysql.user where Host='localhost' and User='$DBName'\"");
+	// delete the user database / user, and reload mysql
+	exec("mysql -u root -p$pass -e 'drop database " . $resdom['dbname'] . "'");
+	exec("mysql -u root -p$pass -e \"delete from mysql.user where Host='localhost' and User='" . $resdom['dbuser'] . "'\"");
 	exec("mysql -u root -p$pass -e \"flush privileges\"");
 	echo "Deleted database information.\n";
 
-	# Delete the user from the sudo file
-	exec("cat /etc/sudoers | grep -v $login > /etc/sudoers");
+	// Delete the user from the sudo file
+	remove("/etc/sudoers",$resdom['username'],"deleteme");
 	echo "Deleted sudo permission to execute changepass.\n";
 
+	// Remove IP from ports file
+	remove("/etc/apache2/ports.conf",$resdom['ip'],"deleteme");
+	echo "Deleted port configuration information.\n";
+
+	// Update database
+	mquery("delete from ports where did='" . $resdom['id'] . "'");
+	mquery("delete from subdomains where did='" . $resdom['id'] . "'");
+	mquery("delete from domains where id='" . $resdom['id'] . "'");
+	mlog(0,"deleteme",!$fatal,"Deleted $domainname.");
+	
+	exec("/etc/init.d/apache2 reload");
 	echo "done!\n\n";
 }
 ?>

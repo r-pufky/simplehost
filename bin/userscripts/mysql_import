@@ -1,35 +1,35 @@
 #!/usr/bin/php4
 <?
-# Robert Pufky
-# 2006-06-13 - mysql database import script
+// Robert Pufky
+// 2006-06-13 - mysql database import script
 
 $fatal = true;  //constant for fatal error
 
-# if no command line options are given.
+// if no command line options are given.
 if( $_SERVER['argc'] != 2 ) {
 	error($fatal,"Invalid command line arguments.");
 } else {
-	# what subdomain are we creating
+	// what subdomain are we creating
 	$importfile = $argv[1];
-	# find out who we are
+	// find out who we are
 	$user = exec("whoami");
-	# figure out the domain name
+	// figure out the domain name
 	$domain = str_replace(" ","",str_replace("-","_",$user));
 
-	# sanity check - only start if we can find the file!
+	// sanity check - only start if we can find the file!
 	if( !file_exists("$importfile") ) {
 		error($fatal,"\nImport file not found\n  Try using the full path with the filename.\n");
 	} 
 	
-	# import the file
+	// import the file
 	`mysql -u $domain -p $domain < $importfile`;
 }
 
-# print out error/warning messages
+// print out error/warning messages
 function error($fatal,$message) {
-	# log entry to the database (date, time, message)
+	// log entry to the database (date, time, message)
 	
-	# print message
+	// print message
 	if( $fatal ) {
 		print "\nError: $message\n\n";
 	} else {
