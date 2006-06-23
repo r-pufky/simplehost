@@ -33,14 +33,20 @@ CREATE TABLE `domains` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 --
--- Dumping data for table `domains`
+-- Table structure for table `logs`
 --
 
-
-/*!40000 ALTER TABLE `domains` DISABLE KEYS */;
-LOCK TABLES `domains` WRITE;
-UNLOCK TABLES;
-/*!40000 ALTER TABLE `domains` ENABLE KEYS */;
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE `logs` (
+  `id` int(11) NOT NULL auto_increment,
+  `did` int(11) default NULL,
+  `stamp` datetime default NULL,
+  `program` varchar(255) default NULL,
+  `function` varchar(255) default NULL,
+  `action` varchar(255) default NULL,
+  `fatal` char(1) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 --
 -- Table structure for table `ports`
@@ -58,12 +64,6 @@ CREATE TABLE `ports` (
 -- Dumping data for table `ports`
 --
 
-
-/*!40000 ALTER TABLE `ports` DISABLE KEYS */;
-LOCK TABLES `ports` WRITE;
-UNLOCK TABLES;
-/*!40000 ALTER TABLE `ports` ENABLE KEYS */;
-
 --
 -- Table structure for table `subdomains`
 --
@@ -76,16 +76,6 @@ CREATE TABLE `subdomains` (
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
---
--- Dumping data for table `subdomains`
---
-
-
-/*!40000 ALTER TABLE `subdomains` DISABLE KEYS */;
-LOCK TABLES `subdomains` WRITE;
-UNLOCK TABLES;
-/*!40000 ALTER TABLE `subdomains` ENABLE KEYS */;
-
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
@@ -93,4 +83,3 @@ UNLOCK TABLES;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-

@@ -133,8 +133,8 @@ function addme($domainname) {
 	exec("mysql -u root -p$pass -e \"grant all privileges on $DBName.* to '$DBName'@'localhost' identified by 'changeme'\"");
 	echo "Created hosted site database user/pass.\n";
 
-	// add user to their own sudo users group
-	exec("echo '$login    ALL=(root)    /root/bin/change_pass.php' >> /etc/sudoers");
+	// add user to only execute those commands with their username as options.
+	exec("echo '$login    ALL= /root/bin/change_pass.php $login,/root/bin/create_subdomain.php $login' >> /etc/sudoers");
 	echo "Created sudo permission to execute changepass.\n";
 
 	// add user to apache ports file

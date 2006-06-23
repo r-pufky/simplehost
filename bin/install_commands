@@ -12,6 +12,7 @@ chmod 700 install_commands
 chmod 700 mhost
 chmod 700 passwd-noninteractive.exp
 chmod 700 mysql-backup
+chmod 700 create_subdomain
 
 # make backup directorys
 mkdir /root/backup /root/backup/mysql
