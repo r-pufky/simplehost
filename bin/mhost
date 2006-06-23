@@ -61,6 +61,14 @@ function addme($domainname) {
 	mquery("insert into domains (domain,ip,contactname,contactemail,password,dbname,dbuser,username,gallery2) values('$domainname','$IP','$contactname','$contactemail','changeme','$DBName','$DBName','$login','N')");
 	mlog(0,"addme",!$fatal,"Created domain $domainname.");
 
+	// grab the interface number from the number of domains, if none, start at 1, otherwise goto next one
+	if( ($interfacenum = mysql_num_rows(mquery("select * from domains"))) == 0 ) { 
+		$interfacenum = 1; 
+	} else { $interfacenum += 1; }
+	// setup the actual IP on the interface
+	exec("echo -e -n "\n\niface eth0:$interfacenum inet static\naddress $IP\nnetmask 255.255.255.0");
+	exec("ifup eth0:$interfacenum");
+
 	// insert the default ports to be used
 	$resdom = mysql_fetch_array(mquery("select id from domains where domain='$domainname'"));
 	mquery("insert into ports (did,port) values('" . $resdom['id'] . "','80')");
@@ -191,6 +199,6 @@ function deleteme($domainname) {
 	mlog(0,"deleteme",!$fatal,"Deleted $domainname.");
 	
 	exec("/etc/init.d/apache2 reload");
-	echo "done!\n\n";
+	echo "done!\n\nRemember to shutdown and remove IP entry from /etc/network/interfaces\n\n";
 }
 ?>
