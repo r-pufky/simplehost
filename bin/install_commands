@@ -1,9 +1,6 @@
 #!/bin/sh
 # Run after checking out from SVN, or after first installation
 
-# copy commands to correct directories
-cp userscripts/* /usr/local/bin
-
 # secure relavent files
 chmod 700 config.inc.php
 chmod 600 admindb.dump
@@ -12,10 +9,17 @@ chmod 700 install_commands
 chmod 700 mhost
 chmod 700 passwd-noninteractive.exp
 chmod 700 mysql-backup
-chmod 700 create_subdomain
+chmod 700 create_subdomain.php
+chmod 600 readme.txt
+
+# copy commands to correct directories
+cp userscripts/* /usr/local/bin
 
 # make backup directorys
 mkdir /root/backup /root/backup/mysql
 chmod -R 500 /root/backup
 
-echo -e -n "Insert into /etc/motd if not already:\n'change_pass'      - change your user account password for all services\n'mysql_local'      - launch mysqladmin\n'mysql_import'     - import mysql database dumps into your database\n'create_subdomain' - create a subdomain off of your domain\n'open_for_web'     - Enabled web access to newly created files/directories in www/\n\nUse 'host_help' for more information on using these commands.\n"
+# setup database
+
+echo -e -n "\n\nSetup the administration database if not already setup.\n\tcreate database 'pedro'\n\tload admin.dump file into database 'pedro'\n\tgrant access to only root@localhost"
+echo -e -n "\n\nInsert into /etc/motd if not already:\n'change_pass'      - change your user account password for all services\n'mysql_local'      - launch mysqladmin\n'mysql_import'     - import mysql database dumps into your database\n'create_subdomain' - create a subdomain off of your domain\n'open_for_web'     - Enabled web access to newly created files/directories in www/\n\nUse 'host_help' for more information on using these commands.\n"

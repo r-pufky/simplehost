@@ -66,7 +66,7 @@ function addme($domainname) {
 		$interfacenum = 1; 
 	} else { $interfacenum += 1; }
 	// setup the actual IP on the interface
-	exec("echo -e -n "\n\niface eth0:$interfacenum inet static\naddress $IP\nnetmask 255.255.255.0");
+	exec("echo -e -n '\n\niface eth0:$interfacenum inet static\naddress $IP\nnetmask 255.255.255.0'");
 	exec("ifup eth0:$interfacenum");
 
 	// insert the default ports to be used
