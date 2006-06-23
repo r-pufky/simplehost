@@ -21,5 +21,5 @@ chmod -R 500 /root/backup
 
 # setup database
 
-echo -e -n "\n\nSetup the administration database if not already setup.\n\tcreate database 'pedro'\n\tload admin.dump file into database 'pedro'\n\tgrant access to only root@localhost"
+echo -e -n "\n\nSetup the administration database if not already setup.\n\tcreate database: (in mysql) create database DB_NAME;\n\tload admin.dump file:  mysql -u root -p DB_PASSWORD < admindb.dump;\n\tRestruct access: (in mysql) grant all on DB_NAME.* to 'root'@'localhost'"
 echo -e -n "\n\nInsert into /etc/motd if not already:\n'change_pass'      - change your user account password for all services\n'mysql_local'      - launch mysqladmin\n'mysql_import'     - import mysql database dumps into your database\n'create_subdomain' - create a subdomain off of your domain\n'open_for_web'     - Enabled web access to newly created files/directories in www/\n\nUse 'host_help' for more information on using these commands.\n"
