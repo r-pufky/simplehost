@@ -28,7 +28,7 @@ $did = $domain['id'];
 // prompt for subdomain name, and verify it doesn't exist already
 echo "\n\nEnter desired subdomain [i.e. test.abc.com -> test]: ";
 $subdomain = getinput();
-if( $results = mysql_fetch_array(mquery("select * from subdomains where did='" . $domain['id'] . "'")) ) { mlog($did,"main",$fatal,"Subdomain $subdomain.$domainname already exists!"); }
+if( $results = mysql_fetch_array(mquery("select * from subdomains where subdomain='$subdomain'")) ) { mlog($did,"main",$fatal,"Subdomain $subdomain.$domainname already exists!"); }
 if( file_exists("/home/$user/www/$subdomain") ) { mlog($did,"main",$fatal,"Directory exists where subdomain would be created: /home/$user/www/$subdomain."); }
 
 // update database
@@ -37,11 +37,12 @@ mlog($did,"main",!$fatal,"Created subdomain $subdomain.$domainname sql entry");
 
 // create hosting directory
 exec("mkdir /home/$user/www/$subdomain");
-exec("chgrp www-data /home/$user/www/$subdomain");
+exec("chown $user:www-data /home/$user/www/$subdomain");
 echo("\nCreated subdomain hosting directory.");
 
 // Create the virtualhost template for apache2
 exec("echo '
+NameVirtualHost $IP:80
 <VirtualHost $IP:80>
   ServerName $subdomain.$domainname
   ServerAdmin webmaster@$subdomain.$domainname
@@ -52,6 +53,7 @@ exec("echo '
 
 # Note: by default, site uses generic SSL Cert.
 # Remove this line, change and uncomment the .crt & .key lines for custom certificate
+NameVirtualHost $IP:443
 <VirtualHost $IP:443>
   SSLEngine On
   SSLCertificateFile /etc/apache2/ssl/apache.pem
@@ -71,6 +73,8 @@ echo("\nCreated subdomain apache configuration file");
 // setup logfiles
 exec("touch /home/$user/logs/$subdomain.$domainname-error.log /home/$user/logs/$subdomain.$domainname-access.log");
 exec("chmod 660 /home/$user/logs/$subdomain.$domainname-error.log /home/$user/logs/$subdomain.$domainname-access.log");
-echo "\n\nCreated '$subdomain.$domainname'.\n\tIf configuration needs to be changed, contact admin to reload the subdomain.\n\n";
+echo("Reloading apache2... ");
+exec("/etc/init.d/apache2 reload");
+echo "done.\n\nCreated '$subdomain.$domainname'.\n\tIf configuration needs to be changed, contact admin to reload the subdomain.\n\n";
 mlog($did,"main",!$fatal,"Created $subdomain.$domainname successfully.");
 ?>

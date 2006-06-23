@@ -24,8 +24,6 @@ function mlog($user,$function,$fatal,$action) {
 
 	$query = "insert into logs (did,stamp,program,function,action,fatal) values($user,NOW(),'$program','$function','$action','$fatal')";
 
-	echo "\n".$query ."\n";
-
 	// log entry to the database (date, time, message), or die.
 	mquery($query);
 	

@@ -134,11 +134,11 @@ function addme($domainname) {
 	echo "Created hosted site database user/pass.\n";
 
 	// add user to only execute those commands with their username as options.
-	exec("echo '$login    ALL= /root/bin/change_pass.php $login,/root/bin/create_subdomain.php $login' >> /etc/sudoers");
+	exec("echo '$login    ALL = NOPASSWD: /root/bin/change_pass.php $login,/root/bin/create_subdomain.php $login' >> /etc/sudoers");
 	echo "Created sudo permission to execute changepass.\n";
 
 	// add user to apache ports file
-	exec("echo -e -n 'Listen $IP:80\nListen $IP:443' >> /etc/apache2/ports.conf");
+	exec("echo -e -n '\nListen $IP:80\nListen $IP:443' >> /etc/apache2/ports.conf");
 
 	// enable the website
 	echo "Enabling the website... ";
