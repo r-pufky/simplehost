@@ -28,7 +28,7 @@ function subdomain() {
 	echo "\nSUBDOMAIN";
 	echo "\n\tCommand:\n\n\t\t subdomain";
 	echo "\n\n\tPurpose:\n\n\t\t Creates a subdomain for your domain if you do not know how to.\n\t\t There is no 'delete' command - you must remove them yourself!";
-	echo "\n\n\tFile locations:\n\n\t\t Subdomain information is located in your /home/$user/etc/apache.conf file (remember to remove your SSL configuration as well)";
+	echo "\n\n\tFile locations:\n\n\t\t Subdomain information is located in your /home/$user/etc/apache.conf file (remember your subdomain SSL configuration if removing!)";
 	echo "\n\t\t Subdomain file locations are /home/$user/www/<subdomainname>\n\n";
 }
 

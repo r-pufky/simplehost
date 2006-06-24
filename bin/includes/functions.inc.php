@@ -48,15 +48,18 @@ function getinput($prompt) {
 //           string - login name of the user
 //           string - domain name
 //           string - subdomain name
-function write_subdomain($ip,$login,$domain,$subdomain) {
-exec("echo '
+//	     booleans - true if the first subdomain
+function write_subdomain($ip,$login,$domain,$subdomain,$first) {
+	// really hackish, but shit happens.
+	if( $first ) {
+		exec("echo '
 NameVirtualHost $ip:80
 <VirtualHost $ip:80>
   ServerName $subdomain.$domain
   ServerAdmin webmaster@$subdomain.$domain
-  DocumentRoot /home/$user/www/$subdomain
-  ErrorLog /home/$user/logs/$subdomain.$domain-error.log
-  CustomLog /home/$user/logs/$subdomain.$domain-access.log common
+  DocumentRoot /home/$login/www/$subdomain
+  ErrorLog /home/$login/logs/$subdomain.$domain-error.log
+  CustomLog /home/$login/logs/$subdomain.$domain-access.log common
 </VirtualHost>
 
 # Note: by default, site uses generic SSL Cert.
@@ -72,9 +75,36 @@ NameVirtualHost $ip:443
   SSLCipherSuite HIGH:MEDIUM
   ServerName $subdomain.$domain
   ServerAdmin webmaster@$subdomain.$domain
-  DocumentRoot /home/$user/www/$subdomain
-  ErrorLog /home/$user/logs/ssl-$subdomain.$domain-error.log
-  CustomLog /home/$user/logs/ssl-$subdomain.$domain-access.log common
-</VirtualHost>' >> /home/$user/etc/apache.conf");
+  DocumentRoot /home/$login/www/$subdomain
+  ErrorLog /home/$login/logs/ssl-$subdomain.$domain-error.log
+  CustomLog /home/$login/logs/ssl-$subdomain.$domain-access.log common
+</VirtualHost>' >> /home/$login/etc/apache.conf");
+	} else {
+		exec("echo '
+<VirtualHost $ip:80>
+  ServerName $subdomain.$domain
+  ServerAdmin webmaster@$subdomain.$domain
+  DocumentRoot /home/$login/www/$subdomain
+  ErrorLog /home/$login/logs/$subdomain.$domain-error.log
+  CustomLog /home/$login/logs/$subdomain.$domain-access.log common
+</VirtualHost>
+
+# Note: by default, site uses generic SSL Cert.
+# Custom Certs: remove apache.pem line and uncomment .crt,.key lines
+# subsituting your files for the generic ones
+<VirtualHost $ip:443>
+  SSLEngine On
+  SSLCertificateFile /etc/apache2/ssl/apache.pem
+  #SSLCertificateFile /home/$login/etc/<your cert>.crt
+  #SSLCertificateKeyFile /home/$login/etc/<your cert>.key
+  SSLProtocol all
+  SSLCipherSuite HIGH:MEDIUM
+  ServerName $subdomain.$domain
+  ServerAdmin webmaster@$subdomain.$domain
+  DocumentRoot /home/$login/www/$subdomain
+  ErrorLog /home/$login/logs/ssl-$subdomain.$domain-error.log
+  CustomLog /home/$login/logs/ssl-$subdomain.$domain-access.log common
+</VirtualHost>' >> /home/$login/etc/apache.conf");
+	}
 }
 ?>

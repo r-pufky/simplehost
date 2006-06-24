@@ -131,9 +131,7 @@ function del($domain) {
 	echo("done!");
 	
 	mlog("hostmodify.delete",!FATAL,"Deleted $domain.");
-	echo("\n\ndomain has been deleted.\n\nDouble check /etc/network/interfaces and remove " . $results['ip'] . " lines.");
-	echo("\nDouble check /etc/apache2/ports.conf and remove " . $results['ip'] . " lines.");
-	echo("\nDouble check /etc/sudoers and remove " . $results['bash'] . " user line.\n\n");
+	echo("\n\ndomain has been deleted.\n\nDouble check /etc/network/interfaces and remove " . $results['ip'] . " lines.\n\n");
 }
 
 // Function: write_apache2
@@ -164,8 +162,9 @@ function write_apache2($ip,$login,$domain) {
   ServerName $domain
   ServerAdmin webmaster@$domain
   DocumentRoot /home/$login/www/$domain
-  ErrorLog /home/$login/logs/ssl-$domainname-error.log
-  CustomLog /home/$login/logs/ssl-$domainname-access.log common
+  ErrorLog /home/$login/logs/ssl-$domain-error.log
+  CustomLog /home/$login/logs/ssl-$domain-access.log common
+  Options none
 </VirtualHost>' > /home/$login/etc/apache.conf");
 }
 

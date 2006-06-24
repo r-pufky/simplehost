@@ -29,11 +29,15 @@ $ip = $results['ip'];
 $id = $results['id'];
 
 // grab subdomain information
-$subdomain = getinput("Enter desired subdomain [i.e. test.abc.com -> test]: ");
+$subdomain = getinput("Enter desired subdomain [i.e. test.abc.com -> test]");
 
 // verify subdomain does not exist
 if( $results = mysql_fetch_array(mque("select * from subdomains where subdomain='$subdomain'")) ) { mlog("subdomain.checksubdomain",FATAL,"Subdomain $subdomain.$domain already exists!"); }
 if( file_exists("/home/$bash/www/$subdomain") ) { mlog("subdomain.checkdirectory",FATAL,"/home/$bash/www/$subdomain already exists!"); }
+
+// see if this is the first subdomain created
+$first = false;
+if( mysql_num_rows(mque("select * from subdomains where did='$id'")) == 0 ) { $first = true; }
 
 // update database with new subdomain information
 mque("insert into subdomains (did,subdomain) values('$id','$subdomain')");
@@ -42,7 +46,7 @@ mlog("subdomain.insertsubdomain",!FATAL,"Inserted $subdomain.$domain table infor
 // create hosting directory and configuration files
 exec("mkdir /home/$bash/www/$subdomain");
 exec("chown $bash:www-data /home/$bash/www/$subdomain");
-write_subdomain($ip,$bash,$domain,$subdomain);
+write_subdomain($ip,$bash,$domain,$subdomain,$first);
 
 // setup logfiles
 exec("touch /home/$bash/logs/$subdomain.$domain-error.log /home/$bash/logs/$subdomain.$domain-access.log");
@@ -51,5 +55,5 @@ echo("\nCreated $subdomain.$domain subdomain.");
 mlog("subdomain.addsubdomain",!FATAL,"$subdomain.$domain added successfully!");
 echo("\nReloading apache2... ");
 exec("/etc/init.d/apache2 reload");
-echo "done!\n\nCreated '$subdomain.$domainname'.\n\nRemember -- you must MANUALLY delete your subdomains!\n";
+echo "done!\n\nCreated '$subdomain.$domain'.\n\nRemember -- you must MANUALLY delete your subdomains!\n\n";
 ?>
