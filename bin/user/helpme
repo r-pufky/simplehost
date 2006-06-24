@@ -1,0 +1,46 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  2006-06-23
+
+  Displays help information on special commands
+*/
+
+// what subdomain are we creating
+$command = strtolower($argv[1]);
+
+$user = exec("whoami");
+
+// print the respective help file
+switch(strtolower($command)) {
+	case "subdomain" : { subdomain(); } break;
+	case "backup" : { backup(); } break;
+	case "reload" : { reload(); } break;
+	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\n\n"); }
+}
+
+function subdomain() {
+	global $user;
+	echo "\nSUBDOMAIN";
+	echo "\n\tCommand:\n\n\t\t subdomain";
+	echo "\n\n\tPurpose:\n\n\t\t Creates a subdomain for your domain if you do not know how to.\n\t\t There is no 'delete' command - you must remove them yourself!";
+	echo "\n\n\tFile locations:\n\n\t\t Subdomain information is located in your /home/$user/etc/apache.conf file (remember to remove your SSL configuration as well)";
+	echo "\n\t\t Subdomain file locations are /home/$user/www/<subdomainname>\n\n";
+}
+
+function backup() {
+	global $user;
+	echo "\nBACKUP";
+	echo "\n\tCommand:\n\n\t\t backup <filename>";
+	echo "\n\n\tOptions:\n\n\t\t <filename> - the filename for the backup.  Will be placed in your /home/$user/ directory";
+	echo "\n\n\tPurpose:\n\n\t\t Creates a MySql dump of your current database.\n\t\t Useful if the nightly backups aren't frequent enough,\n\t\t or if you're about to do something stupid.\n\n";
+}
+
+function reload() {
+	global $user;
+	echo "\nRELOAD";
+	echo "\n\tCommand:\n\n\t\t reload";
+	echo "\n\n\tPurpose:\n\n\t\t Checks, and then reloads your apache.conf file to enabled website configuration modifications.\n\t\t Will not crash/halt apache if there is an invalid configuration.\n\n";
+}
+?>

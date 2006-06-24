@@ -2,52 +2,38 @@
 <?
 /*
   Copyright 2006, Robert Pufky
-  Written 6-16-2006 
-  
-  Backup user's mysql database
+  Written 06-22-2006
+
+  Mysql backup script for users.
 */
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
 
-// get current run date.
-$date = date("Y-m-d");
+// load configurations
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
 
-// load the password
-require_once("config.inc.php");
+// find out if we were launched correctly (with the username who launched us, and backup file)
+if( $_SERVER['argc'] != 3 ) { mlog("backup.checkarguments",FATAL,"Invalid command line arguments!"); }
 
-		// modify username for db name
-		$dbname = str_replace("-","_",$user);
-	
-		// create a directory and secure it
-		$dir = "/tmp/$date";
-		if( !is_dir($dir) ) { mkdir($dir,0700); }
+echo("\nBacking up databases... ");
 
-		// connect to the data base
-		mysql_connect("localhost", "root", "$pass");
+// grab information from passed variables.
+$domain = str_replace("-",".",strtolower($argv[1]));
+$backup = $argv[2];
 
-		// dump their db to the tempdirectory, package, store and secure db
-		$userstore = "/home/$user/backup/";
-		echo ".";
-		`$path/mysqldump -u root -p$pass $dbname > $dir/$dbname.dump`;
-		echo ".";
-		`cd /tmp/; $path/zip $date $date/*`;
-		echo ".";
-		`mv -f /tmp/$date.zip $userstore; chmod 400 $userstore$date.zip; chown $user:$user $userstore$date.zip`;
-		echo ".";
+// grab domain information
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("backup.checkdomain",FATAL,"$domain is not valid!"); }
+// find backup file location and check for validity
+$backupfile = "/home/" . $results['bash'] . "/$backup";
+if( file_exists($backupfile) ) { mlog("backup.checkfile",FATAL,"$backup already exists!"); }
+mlog("backup.main",!FATAL,"Request to backup $domain\'s database to /home/" . $results['bash'] . "/$backup.");
 
-		// clean up temp diectory
-		`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
-		echo ".\n";
-	}
-}
-
-// now just have a master backup incase
-if (!is_dir($dir)) { mkdir($dir,0700); }
-
-// dump the datanase and zip it up.
-`$path/mysqldump -u root -p$pass --all-databases > $dir/databases.dump`;
-
-// after done, compress the dump and store it
-`cd /tmp/; $path/zip $date $date/*`;
-`mv -f /tmp/$date.zip $masterstore; chmod 400 $masterstore$date.zip; chown root:root $masterstore$date.zip`;
-// clean up temp diectory
-`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
+// dump the database and secure it
+exec("/usr/bin/mysqldump -u " . $results['mysql'] . " -p" . $results['password'] . " " . $results['mysql'] . " > $backupfile");
+exec("chmod 600 $backupfile");
+exec("chown " . $results['bash'] . ":" . $results['bash'] . " $backupfile");
+mlog("backup.main",!FATAL,"Backup of $domain\'s database successful!");
+echo("done!\n\n");
 ?>

@@ -118,7 +118,6 @@ function del($domain) {
 	// remove from sudoers file, apache port configuration, and network configuration
 	remove($results['bash'],"/etc/sudoers");
 	remove($results['ip'],"/etc/apache2/ports.conf");
-	//remove("iface eth0:" . $results['id'] . " inet static",2,"/etc/network/interfaces");
 	echo("\nRemoved configuration information.");
 
 	// remove domain from database and reload apache
@@ -130,7 +129,8 @@ function del($domain) {
 	echo("done!");
 	
 	mlog("hostmodify.delete",!FATAL,"Deleted $domain.");
-	echo("\n\ndomain has been deleted.\n\n");
+	echo("\n\ndomain has been deleted.\n\nDouble check /etc/network/interfaces and remove " . $results['ip'] . " lines.");
+	echo("\nDouble check /etc/apache2/ports.conf and remove " . $results['ip'] . "\n\n");
 }
 
 // Function: write_apache2
@@ -170,7 +170,7 @@ function write_apache2($ip,$login,$domain) {
 // Purpose:  writes the sudoers configuration to the sudoers file
 // Requires: string - login name of the user
 function write_sudoers($login) {
-	exec("echo '$login    ALL = NOPASSWD: /root/bin/change_pass.php $login,/root/bin/create_subdomain.php $login' >> /etc/sudoers");
+	exec("echo '$login    ALL = NOPASSWD: /root/bin/backup $login *,/root/bin/reload $login,/root/bin/subdomain $login' >> /etc/sudoers");
 }
 
 // Function: write_ports

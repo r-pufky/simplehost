@@ -1,0 +1,3 @@
+#!/bin/sh
+# wraps backup with current username and parameter and passes to sudo
+sudo /root/bin/backup `whoami` $1

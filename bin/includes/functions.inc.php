@@ -31,7 +31,7 @@ function mque($query) {
 function mlog($function,$fatal,$action) {
 	$query = "insert into logs (stamp,function,fatal,action) values(NOW(),'$function','$fatal','$action')";
 	mque($query);
-	if( $fatal ) { die("\n\nFatal Error: $function produce a fatal error: $action\n\n"); }
+	if( $fatal ) { die("\n\nFatal Error: $function produced a fatal error: $action\n\n"); }
 }
 
 // Function: getinput

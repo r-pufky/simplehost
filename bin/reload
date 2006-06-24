@@ -1,0 +1,41 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-22-2006
+
+  Apache2 configuration check and reload script for users.
+*/
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configurations
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+
+// find out if we were launched correctly (with the username who launched us, and backup file)
+if( $_SERVER['argc'] != 2 ) { mlog("reload.checkarguments",FATAL,"Invalid command line arguments!"); }
+
+// grab information from passed variables.
+$domain = str_replace("-",".",strtolower($argv[1]));
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("reload.checkdomain",FATAL,"$domain is not valid!"); }
+
+mlog("reload.main",!FATAL,"$domain requested reload of apache2.");
+echo "\nChecking apache configuration... ";
+
+// check for valid apache configuration file
+$check = exec("apache2ctl -t 2>&1 > /dev/stdout");
+
+if( $check == "Syntax OK" ) {
+	mlog("reload.main",!FATAL,"$domain apache2 configuration correct.");
+	echo "verifed.\nReloading apache... ";
+	exec("apache2ctl graceful");
+	mlog("reload.restart",!FATAL,"Reload of apache2 successful!");
+	echo("done.\n\n");
+} else {
+	echo "failed.\n";
+	echo "\n$check";
+	mlog("reload.restart",FATAL,"Invalid apache.conf file for $domain");
+}
+?>
