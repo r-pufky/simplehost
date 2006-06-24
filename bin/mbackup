@@ -1,0 +1,60 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-224-2006
+
+  Crontab script to backup users databases, and a master database backup for root.
+
+  To restore a database
+  mysql -u root -p <dbname to restore> < [file to restore from];
+*/
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configurations
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+
+mlog("mbackup.main",!FATAL,"Initalizing backup of all domains.");
+
+// setup inital variables
+$masterstore = "/root/backup/mysql/";
+$zip = "/usr/bin/zip";
+$date = date("Y-m-d");
+
+// grab all the domains being hosted
+if( !$results = mque("select * from domains") ) { mlog("mbackup.loaddomains",FATAL,"Could not load domains from database!"); }
+
+while( $domain = mysql_fetch_array($results) ) {
+	// create a directory and secure it
+	$dir = "/tmp/$date";
+	if( !is_dir($dir) ) { mkdir($dir,0700); }
+
+	$userstore = "/home/" . $domain['bash'] . "/backup/";
+
+	// backup their database
+	exec("mysqldump -u root -p$rootpass " . $domain['mysql'] . " > $dir/" . $domain['mysql'] . ".dump");
+	exec("cd /tmp/; $zip $date $date/*");
+	exec("mv -f /tmp/$date.zip $userstore; chmod 0400 $userstore$date.zip; chown " . $domain['bash'] . ":" . $domain['bash'] . " $userstore$date.zip");
+
+	// clean up temp diectory
+	exec("rm -f /tmp/$date.zip; rm -rf /tmp/$date");
+	mlog("mbackup.backup",!FATAL,$domain['domain'] . " backup successful.");
+}
+
+// backup the entire DB to root
+if (!is_dir($dir)) { mkdir($dir,0700); }
+
+// dump the datanase and zip it up.
+exec("mysqldump -u root -p$rootpass --all-databases > $dir/databases.dump");
+
+// after done, compress the dump and store it
+exec("cd /tmp/; $zip $date $date/*");
+exec("mv -f /tmp/$date.zip $masterstore; chmod 0400 $masterstore$date.zip; chown root:root $masterstore$date.zip");
+// clean up temp diectory
+exec("rm -f /tmp/$date.zip; rm -rf /tmp/$date");
+
+mlog("mbackup.main",!FATAL,"Database backups successful.");
+?>
