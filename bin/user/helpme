@@ -19,7 +19,8 @@ switch(strtolower($command)) {
 	case "reload" : { reload(); } break;
 	case "import" : { import(); } break;
 	case "openweb" : { openweb(); } break;
-	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\nimport\nopenweb\n\n"); }
+	case "pass" : { pass(); } break;
+	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\nimport\nopenweb\npass\n\n"); }
 }
 
 function subdomain() {
@@ -40,14 +41,12 @@ function backup() {
 }
 
 function reload() {
-	global $user;
 	echo "\nRELOAD";
 	echo "\n\tCommand:\n\n\t\t reload";
 	echo "\n\n\tPurpose:\n\n\t\t Checks, and then reloads your apache.conf file to enabled website configuration modifications.\n\t\t Will not crash/halt apache if there is an invalid configuration.\n\n";
 }
 
 function import() {
-	global $user;
 	echo "\nIMPORT";
 	echo "\n\tCommand:\n\n\t\t import <mysql_import_file>";
 	echo "\n\n\tOptions:\n\n\t\t <mysql_import_file> - the mysql formatted database file (i.e. backups) to import.  Should use full filepath.";
@@ -55,9 +54,20 @@ function import() {
 }
 
 function openweb() {
-	global $user;
 	echo "\nOPENWEB";
 	echo "\n\tCommand:\n\n\t\t openweb";
 	echo "\n\n\tPurpose:\n\n\t\t Sets correct system group for apache to view all of your webpages.\n\t\t If you get permission denied errors, can't view your page, etc; this is what is causing it.\n\n";
+}
+
+Function pass() {
+	global $user;
+	echo "\nPASS";
+	echo "\n\tCommand:\n\n\t\t pass";
+	echo "\n\n\tRequirements:\n\n\t\t /home/$user/passwd - file containing new password.\n\t\t File must be read-only by you for the new password to be accepted.";
+	echo "\n\n\tPurpose:\n\n\t\t Updates all user password tokens for all hosted services.\n\t\t Will delete the passwd file on successful update.";
+	echo "\n\n\tAdvice:\n\n\t\t Securely change your password with the following steps:";
+	echo "\n\t\t 1) create file: touch /home/$user/passwd\n\t\t 2) Set permissions so only you have access: chmod 0600 /home/$user/passwd";
+	echo "\n\t\t 3) enter password in file with no spaces or returns\n\t\t 4) Secure so that only you can read it: chmod 0400 /home/$user/passwd";
+	echo "\n\t\t 5) run 'pass'\n\n";
 }
 ?>

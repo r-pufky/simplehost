@@ -35,9 +35,10 @@ if( @substr(sprintf('%o', fileperms("$passpath")), -4) != "0400" ) { mlog("pass.
 // read the password file and set the pass (removing trailing whitespace and newline characters), if we can't, die.
 if( !$userpass = rtrim(file_get_contents("$passpath")) ) { mlog("pass.readfile",FATAL,"Cannot read passwd file, or passwd file empty!"); }
 
-// update the password in the database
+// update the password in the database and delete the passwd file
 mque("update domains set password='" . mysql_real_escape_string($userpass) . "' where id='" . $results['id'] . "'");
 mlog("pass.updatepassword",!FATAL,"Password updated in database.");
+exec("rm -f /home/" . $results['bash'] . "/passwd");
 
 // change the user's password for bash and mysql
 exec("/root/bin/passwd.exp " . $results['bash'] . " $userpass > /dev/null");
