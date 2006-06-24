@@ -170,7 +170,7 @@ function write_apache2($ip,$login,$domain) {
 // Purpose:  writes the sudoers configuration to the sudoers file
 // Requires: string - login name of the user
 function write_sudoers($login) {
-	exec("echo '$login    ALL = NOPASSWD: /root/bin/backup $login *,/root/bin/reload $login,/root/bin/subdomain $login' >> /etc/sudoers");
+	exec("echo '$login    ALL = NOPASSWD: /root/bin/backup $login *,/root/bin/import $login *,/root/bin/reload $login,/root/bin/subdomain $login' >> /etc/sudoers");
 }
 
 // Function: write_ports

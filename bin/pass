@@ -1,0 +1,49 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-24-2006
+
+  Change user password script.
+*/
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configurations
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+
+// find out if we were launched correctly (with the username who launched us)
+if( $_SERVER['argc'] != 2 ) { mlog("pass.checkarguments",FATAL,"Invalid command line arguments!"); }
+
+// grab domain information and verify
+$domain = str_replace("-",".",strtolower($argv[1]));
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("pass.checkdomain",FATAL,"$domain is not valid!"); }
+
+mlog("pass.main",!FATAL,"$domain requested new password.");
+echo("Changing password... ");
+
+$passpath = "/home/" . $results['bash'] . "/passwd";
+
+// If the password file does not exist, die.
+if( !file_exists("$passpath") ) { mlog("pass.checkfile",FATAL,"Passwd file ($passpath) does not exist!"); }
+
+// If the password file is more than readable by owner, die.
+if( @substr(sprintf('%o', fileperms("$passpath")), -4) != "0400" ) { mlog("pass.checksecurity",FATAL,"Incorrect permissions on passwd file!"); }
+
+// read the password file and set the pass (removing trailing whitespace and newline characters), if we can't, die.
+if( !$userpass = rtrim(file_get_contents("$passpath")) ) { mlog("pass.readfile",FATAL,"Cannot read passwd file, or passwd file empty!"); }
+
+// update the password in the database
+mque("update domains set password='" . mysql_real_escape_string($userpass) . "' where id='" . $results['id'] . "'");
+mlog("pass.updatepassword",!FATAL,"Password updated in database.");
+
+// change the user's password for bash and mysql
+exec("/root/bin/passwd.exp " . $results['bash'] . " $userpass > /dev/null");
+mque("set password for '" . $results['mysql'] . "'@'localhost' = PASSWORD('$userpass')");
+echo "password tokens changed.";
+
+mlog("pass.main",!FATAL,"Password updated successfully!");
+echo "\n\ndone!\n\n";
+?>

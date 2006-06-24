@@ -1,0 +1,3 @@
+#!/bin/sh
+# wraps subdomain with username and passes to sudo
+sudo /root/bin/pass `whoami`

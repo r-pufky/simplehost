@@ -1,0 +1,42 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-224-2006
+
+  Imports user databases/tables into mysql.
+*/
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configurations
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+
+// find out if we were launched correctly (with the username who launched us, and backup file)
+if( $_SERVER['argc'] != 3 ) { mlog("import.checkarguments",FATAL,"Invalid command line arguments!"); }
+
+// grab information from passed variables.
+$domain = str_replace("-",".",strtolower($argv[1]));
+$filepath = $argv[2];
+
+// verify information
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("import.checkdomain",FATAL,"$domain is not valid!"); }
+if( !file_exists($filepath) ) { mlog("import.checkfile",FATAL,"$filepath does not exist!"); }
+
+mlog("import.main",!FATAL,"$domain requested import of $filepath.");
+echo("\nImporting to database... ");
+
+// check for valid apache configuration file
+$check = exec("mysql -u " . $results['mysql'] . " -p" . $results['password'] . " " . $results['mysql'] . " < $filepath 2>&1 > /dev/stdout");
+
+if( $check == "" ) {
+	mlog("import.import",!FATAL,"Database import successful!");
+	echo("done.\n\n");
+} else {
+	echo "Import failed.\n";
+	echo "\n$check";
+	mlog("import.import",FATAL,"Database import failed.");
+}
+?>
