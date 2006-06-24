@@ -117,9 +117,9 @@ function del($domain) {
 	echo("\nDeleted database.");
 
 	// remove from sudoers file, apache port configuration, and network configuration
-	remove($results['bash'],"/etc/sudoers");
-	remove($results['ip'],"/etc/apache2/ports.conf");
-	echo("\nRemoved configuration information.");
+	#remove($results['bash'],"/etc/sudoers");
+	#remove($results['ip'],"/etc/apache2/ports.conf");
+	#echo("\nRemoved configuration information.");
 
 	// remove domain from database and reload apache
 	mque("delete from ports where did='" . $results['id'] . "'");
@@ -131,7 +131,8 @@ function del($domain) {
 	
 	mlog("hostmodify.delete",!FATAL,"Deleted $domain.");
 	echo("\n\ndomain has been deleted.\n\nDouble check /etc/network/interfaces and remove " . $results['ip'] . " lines.");
-	echo("\nDouble check /etc/apache2/ports.conf and remove " . $results['ip'] . "\n\n");
+	echo("\nDouble check /etc/apache2/ports.conf and remove " . $results['ip'] . " lines.");
+	echo("\nDouble check /etc/sudoers and remove " . $results['bash'] . " user line.\n\n");
 }
 
 // Function: write_apache2

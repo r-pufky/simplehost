@@ -1,0 +1,35 @@
+#!/bin/sh
+# Copyright 2006, Robert Pufky
+# 2006-06-24
+#
+# Setups scripts for host administration
+
+# secure relavent files
+echo -e -n "\nSecuring directories.. "
+chmod -R 0700 /root/bin
+chmod 0400 /root/bin/includes/*
+echo -n "done."
+
+# copy commands to correct directories
+echo -e -n "\nSeting up user scripts... "
+cp /root/bin/user/* /usr/local/bin
+chmod 0755 /usr/local/bin/*
+echo -n "done."
+
+# make backup directorys
+echo -e -n "\nCreating root backup directories... "
+mkdir /root/backup /root/backup/mysql
+chmod -R 0500 /root/backup
+echo -n "done."
+
+# create mysql database
+echo -e -n "\nCreating hosting database (will be prompted for root database password)\n"
+mysql -u root -p -e 'create database DB_NAME'
+mysql -u root -p -e "grant all privileges on DB_NAME.* to 'root'@'localhost'"
+mysql -u root -p DB_PASSWORD < /root/bin/includes/admin.dump
+
+# setup motd for users
+echo -e -n "\n\n'helpmp' - shows all hosting commands, and instructions on how to use them" > /etc/motd
+
+# setup motd for admins
+echo -n "\n\nAdmin Commands:\nmbackup - backup all domains (automatically run as daily cronjob\nhostmodify [add|delete] [domain] - add/delete domain accounts (use root domain)\ngallerypresetup [domain] - run this script BEFORE running web gallery install\ngallerypostsetup [domain] - run this script AFTER running web gallery install" >> /root/.bashrc

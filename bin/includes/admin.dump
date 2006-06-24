@@ -1,0 +1,119 @@
+-- MySQL dump 10.9
+--
+-- Host: localhost    Database: DB_NAME
+-- ------------------------------------------------------
+-- Server version	4.1.11-Debian_4sarge4-log
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `domains`
+--
+
+DROP TABLE IF EXISTS `domains`;
+CREATE TABLE `domains` (
+  `id` int(11) NOT NULL auto_increment,
+  `domain` varchar(255) default NULL,
+  `ip` varchar(15) default '0.0.0.0',
+  `name` varchar(255) default NULL,
+  `email` varchar(255) default NULL,
+  `password` varchar(128) default 'changeme',
+  `mysql` varchar(255) default NULL,
+  `bash` varchar(255) default NULL,
+  `gallery2` char(1) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `domains`
+--
+
+
+/*!40000 ALTER TABLE `domains` DISABLE KEYS */;
+LOCK TABLES `domains` WRITE;
+UNLOCK TABLES;
+/*!40000 ALTER TABLE `domains` ENABLE KEYS */;
+
+--
+-- Table structure for table `logs`
+--
+
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE `logs` (
+  `id` int(11) NOT NULL auto_increment,
+  `stamp` datetime default NULL,
+  `function` varchar(255) default 'Generic',
+  `fatal` char(1) default '0',
+  `action` varchar(255) default 'Generic',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `logs`
+--
+
+
+/*!40000 ALTER TABLE `logs` DISABLE KEYS */;
+LOCK TABLES `logs` WRITE;
+UNLOCK TABLES;
+/*!40000 ALTER TABLE `logs` ENABLE KEYS */;
+
+--
+-- Table structure for table `ports`
+--
+
+DROP TABLE IF EXISTS `ports`;
+CREATE TABLE `ports` (
+  `id` int(11) NOT NULL auto_increment,
+  `did` int(11) default NULL,
+  `port` int(11) default '80',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `ports`
+--
+
+
+/*!40000 ALTER TABLE `ports` DISABLE KEYS */;
+LOCK TABLES `ports` WRITE;
+UNLOCK TABLES;
+/*!40000 ALTER TABLE `ports` ENABLE KEYS */;
+
+--
+-- Table structure for table `subdomains`
+--
+
+DROP TABLE IF EXISTS `subdomains`;
+CREATE TABLE `subdomains` (
+  `id` int(11) NOT NULL auto_increment,
+  `did` int(11) default NULL,
+  `subdomain` varchar(255) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `subdomains`
+--
+
+
+/*!40000 ALTER TABLE `subdomains` DISABLE KEYS */;
+LOCK TABLES `subdomains` WRITE;
+UNLOCK TABLES;
+/*!40000 ALTER TABLE `subdomains` ENABLE KEYS */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
