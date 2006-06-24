@@ -83,7 +83,7 @@ function add($domain) {
 	exec("/root/bin/passwd.exp $bash changeme > /dev/null");
 	exec("ifup eth0:" . $results['id']);
 	exec("a2ensite $domain");
-	exec("/etc/init.d/apache2 reload");
+	exec("apache2ctl graceful");
 	echo "done!\n\n";
 	mlog("hostmodify.add",!FATAL,"$domain added successfuly!");
 	echo "\n\nLogin username:   $bash\nDB Username:      $mysql\nDB Name:          $mysql\nDefault password: changeme\n\n";
@@ -100,6 +100,7 @@ function del($domain) {
 	
 	// disable the interface / website
 	exec("a2dissite $domain");
+	exec("apache2ctl graceful");
 	exec("ifdown eth0:" . $results['id']);
 	exec("rm /etc/apache2/sites-available/$domain");
 	echo("\nDisabled network interface and apache.");
@@ -191,5 +192,55 @@ function write_ports($id,$ip) {
 //           integer - the number of the interface to add
 function write_interfaces($ip,$num) {
 	exec("echo -e -n '\n\niface eth0:$num inet static\naddress $ip\nnetmask 255.255.255.0' >> /etc/network/interfaces");
+}
+
+// Function: write_gallery
+// Purpose:  rewrites the gallery2 configuration file with user credentials
+// Requires: string - the domain name
+//           string - the bash user name
+//           string - the mysql user name
+//           string - the mysql password
+Function write_gallery($domain,$bash,$mysql,$pass) {
+	// read configuration file for gallery2 and make backup
+	$filepath = "/home/$bash/www/$domain/gallery2/config.php";
+	if( !file_exists($filepath) ) { mlog("gallerypostsetup.writeconfig",FATAL,"Gallery configuration file does not exist!"); }
+	$config = file($filepath);
+	exec("cp $filepath /home/$bash/gallery.config.backup");
+
+	// verify we can write to the file
+	if( !is_writeable($filepath) ) { mlog("gallerypostsetup.writeconfig",FATAL,"Gallery configuration file is not writable!"); }
+	if( !$fpipe = fopen($filepath,'w') ) { mlog("gallerypostsetup.writeconfig",FATAL,"Gallery configuration file cannot be written to!"); }
+
+	// rewrite the file, but with users database information
+	foreach ( $config as $line ) {
+		// if it is a user line, then write it with the user information
+		if( strpos($line, "\$storeConfig['username'] = '") ) {
+			if( fwrite($fpipe, "\$storeConfig['username'] = '$mysql';\n") === false ) {
+				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write password to configuration file!");
+			}
+		// if it is a password line then write it with users information
+		} else if( strpos($line, "\$storeConfig['password'] = '") ) {
+			if( fwrite($fpipe, "\$storeConfig['password'] = '$pass';\n") === false ) {
+				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write password to configuration file!");
+			}
+		} else {
+			// we don't have the password line, just write it
+			if( fwrite($fpipe, $line) === false ) { mlog("gallerypostsetup.writeconfig",FATAL,"Could not write to configuration file!"); }
+		}
+	}
+	mlog("gallerypostsetup.writeconfig",!FATAL,"Gallery configuration file written successfully!");
+}
+
+// Function: write_htaccess
+// Purpose:  writes htaccess file for gallyer to prevent people browsing
+// Requires: string - the domain name
+//           string - the bash user name
+Function write_htaccess($domain,$bash) {
+	exec("echo '<Files ~ \"\\.(inc|class)$\">
+  Deny from all
+</Files>
+<Files ~ \"config.php\">
+  Deny from all
+</Files>' > /home/$bash/www/$domain/gallery2/.htaccess");
 }
 ?>

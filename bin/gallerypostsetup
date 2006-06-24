@@ -1,0 +1,59 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-22-2006
+
+  Finishes gallery2 installation from the website.
+*/
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configuration and logging
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+require("includes/admin.inc.php");
+
+// find out if we were launched correctly (with the username who launched us passed)
+if( $_SERVER['argc'] != 2 ) { mlog("gallerypostsetup.checkvaliduser",FATAL,"Invalid user used to launch gallerypresetup."); }
+
+// grab domain information from database
+$domain = str_replace("-",".",strtolower($argv[1]));
+mlog("gallerypostsetup.main",!FATAL,"Request to finish gallery2 installaion for $domain.");
+
+// grab information for domain, or error
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("gallerypostsetup.checkdomain",FATAL,"Cannot retrieve domain from database."); }
+// check to see if gallery is already setup!
+if( $results['gallery2'] != 'Y' ) { mlog("gallerypostsetup.checkgallery",FATAL,"Gallery is not setup for this domain!"); }
+
+// rewrite the file, but with users database information
+write_gallery($domain,$results['bash'],$results['mysql'],$results['password']);		
+write_htaccess($domain,$results['bash']);
+
+// secure gallery2 installation
+$gallerypath = "/home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2";
+exec("chown -R " . $results['bash'] . ":www-data $gallerypath");
+exec("chmod -R 640 $gallerypath");
+exec("chmod 750 $gallerypath");
+exec("chmod 750 $gallerypath/upgrade");
+
+// secure g2data (gallery2 data location) installation
+$g2datapath = "/home/" . $results['bash'] . "/g2data";
+exec("chown -R " . $results['bash'] . ":www-data $g2datapath");
+exec("chmod -R 770 $g2datapath");
+exec("chmod -R 660 $g2datapath/*.log $g2datapath/*.dat");
+
+// disable gallery2 administration page again
+exec("rm -f /usr/share/gallery2/login.txt");
+
+// re-enable the website
+echo("Gallery secured.\nReenabling site... ");
+exec("a2ensite " . $results['domain']);
+exec("apache2ctl graceful");
+echo("done.");
+
+// update database information
+mlog("gallerypostsetup.main",!FATAL,"Gallery setup successful!");
+echo("\n\ndone!\n");
+?>
