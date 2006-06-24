@@ -17,7 +17,8 @@ switch(strtolower($command)) {
 	case "subdomain" : { subdomain(); } break;
 	case "backup" : { backup(); } break;
 	case "reload" : { reload(); } break;
-	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\n\n"); }
+	case "import" : { import(); } break;
+	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\nimport\n\n"); }
 }
 
 function subdomain() {
@@ -42,5 +43,13 @@ function reload() {
 	echo "\nRELOAD";
 	echo "\n\tCommand:\n\n\t\t reload";
 	echo "\n\n\tPurpose:\n\n\t\t Checks, and then reloads your apache.conf file to enabled website configuration modifications.\n\t\t Will not crash/halt apache if there is an invalid configuration.\n\n";
+}
+
+function import() {
+	global $user;
+	echo "\nIMPORT";
+	echo "\n\tCommand:\n\n\t\t import <mysql_import_file>";
+	echo "\n\n\tOptions:\n\n\t\t <mysql_import_file> - the mysql formatted database file (i.e. backups) to import.  Should use full filepath.";
+	echo "\n\n\tPurpose:\n\n\t\t Imports database information into your mysql database.  Useful for restoring from backups, or setting up inital database.\n\n";
 }
 ?>
