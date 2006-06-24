@@ -1,0 +1,58 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-22-2006
+
+  Sub-domain creation script for users.
+*/
+      
+// we must be run as the root user
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configuration and logging
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+require("includes/files.inc.php");
+
+// find out if we were launched correctly (with the username who launched us passed)
+if( $_SERVER['argc'] != 2 ) { mlog("subdomain.checkvaliduser",FATAL,"Invalid user used to launch subdomain."); }
+
+// grab domain information from database
+$domain = str_replace("-",".",strtolower($argv[1]));
+mlog("subdomain.addsubdomain",!FATAL,"Request to add subdomain to $domain.");
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { 
+	mlog("subdomain.checkdomain",FATAL,"Cannot retrieve domain from database."); 
+}
+
+$bash = $results['username'];
+$ip = $results['ip'];
+$id = $results['id'];
+
+// grab subdomain information
+$subdomain = getinput("Enter desired subdomain [i.e. test.abc.com -> test]: ");
+
+if( $results = mysql_fetch_array(mque("select * from subdomains where subdomain='$subdomain'")) ) { 
+	mlog("subdomain.checksubdomain",FATAL,"Subdomain $subdomain.$domain already exists!");
+}
+if( file_exists("/home/$bash/www/$subdomain") ) { mlog("subdomain.checkdirectory",FATAL,"/home/$bash/www/$subdomain already exists!"); }
+
+// update database
+mque("insert into subdomains (did,subdomain) values('$id','$subdomain')");
+mlog("subdomain.insertsubdomain",!FATAL,"Inserted $subdomain.$domain table information.");
+
+// create hosting directory and configuration files
+exec("mkdir /home/$bash/www/$subdomain");
+exec("chown $bash:www-data /home/$bash/www/$subdomain");
+write_subdomain($ip,$bash,$domain,$subdomain);
+
+// setup logfiles
+exec("touch /home/$bash/logs/$subdomain.$domain-error.log /home/$bash/logs/$subdomain.$domain-access.log");
+exec("chmod 660 /home/$bash/logs/$subdomain.$domain-error.log /home/$bash/logs/$subdomain.$domain-access.log");
+echo("\nCreated $subdomain.$domain subdomain.");
+mlog("subdomain.addsubdomain",!FATAL,"$subdomain.$domain added successfully!");
+echo("\nReloading apache2... ");
+exec("/etc/init.d/apache2 reload");
+echo "done!\n\nCreated '$subdomain.$domainname'.\n\tIf configuration needs to be changed, contact admin to reload the subdomain.\n\n";
+mlog($did,"main",!$fatal,"Created $subdomain.$domainname successfully.");
+?>

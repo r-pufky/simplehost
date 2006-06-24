@@ -1,3 +1,0 @@
-#!/bin/sh
-# replace - with mysql safe _ usernames and launch mysql
-mysql -u `whoami | tr - _` -p

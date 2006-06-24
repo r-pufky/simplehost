@@ -1,0 +1,29 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-22-2006
+
+  host creation and delete script for ADMINS ONLY.
+*/
+
+// we must be root to run this script
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// load configuration and functions.
+require("includes/config.inc.php");
+require("includes/functions.inc.php");
+require("includes/admin.inc.php");
+
+// proper arguments passed?
+if( $_SERVER['argc'] != 3 ) { mlog("hostmodify.checkargs",FATAL,"Invalid command line arguments!"); }
+
+$action = strtolower($argv[1]);
+$domain = strtolower($argv[2]);
+
+switch($action) {
+	case "add" : add($domain);break;
+	case "delete" : del($domain);break;
+	default : mlog("hostmodify.selectaction",FATAL,"Inproper command line arguments!");
+}
+?>
