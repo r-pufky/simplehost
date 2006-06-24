@@ -6,6 +6,8 @@
   Admin functions for scripts
 
   load after config.inc.php/functions.inc.php
+
+  if updating the sudoers line, remember to do both!
 */
 
 // Function: add
@@ -116,10 +118,9 @@ function del($domain) {
 	exec("mysql -u root -p$rootpass -e \"flush privileges\"");
 	echo("\nDeleted database.");
 
-	// remove from sudoers file, apache port configuration, and network configuration
-	#remove($results['bash'],"/etc/sudoers");
-	#remove($results['ip'],"/etc/apache2/ports.conf");
-	#echo("\nRemoved configuration information.");
+	// remove from sudoers file, apache port configuration
+	remove($results['id']);
+	echo("Removed configuration information.");
 
 	// remove domain from database and reload apache
 	mque("delete from ports where did='" . $results['id'] . "'");
@@ -172,7 +173,7 @@ function write_apache2($ip,$login,$domain) {
 // Purpose:  writes the sudoers configuration to the sudoers file
 // Requires: string - login name of the user
 function write_sudoers($login) {
-	exec("echo '$login    ALL = NOPASSWD: /root/bin/backup $login *,/root/bin/import $login *,/root/bin/reload $login,/root/bin/subdomain $login' >> /etc/sudoers,/root/bin/pass $login");
+	exec("echo '$login    ALL = NOPASSWD: /root/bin/backup $login *,/root/bin/import $login *,/root/bin/reload $login,/root/bin/subdomain $login,/root/bin/pass $login' >> /etc/sudoers");
 }
 
 // Function: write_ports
@@ -183,7 +184,7 @@ function write_ports($id,$ip) {
 	$results = mque("select * from ports where did='" . $id . "'");
 
 	while( $port = mysql_fetch_array($results) ) {
-		exec("echo -e -n '\nListen $ip:" . $port['port'] . "\n' >> /etc/apache2/ports.conf");
+		exec("echo -e -n '\nListen $ip:" . $port['port'] . "' >> /etc/apache2/ports.conf");
 	}
 }
 
@@ -230,6 +231,55 @@ Function write_gallery($domain,$bash,$mysql,$pass) {
 		}
 	}
 	mlog("gallerypostsetup.writeconfig",!FATAL,"Gallery configuration file written successfully!");
+}
+
+// Function: remove
+// Purpose:  removes sites configuration information from /etc/sudoers and /etc/apache2/ports.conf
+// Rquires:  string - the id of the domain
+Function remove($id) {
+	$sudopath = "/etc/sudoers";
+	$portpath = "/etc/apache2/ports.conf";
+	
+	// grab domain and port information
+	if( !$results = mysql_fetch_array(mque("select * from domains where id='" . $id . "'")) ) { mlog("remove.checkdomain",FATAL,"Domain not found!"); }
+	if( !$ports = mque("select * from ports where did='" . $id . "'") ) { mlog("remove.checkports",FATAL,"No ports found!"); }
+
+	// process the sudoers file
+	$bash = $results['bash'];
+	$file = file($sudopath);
+	
+	// attempt to open sudoers file for writing
+	if( !$fpipe = fopen($sudopath,'w') ) { mlog("remove.rewritesudoers",FATAL,"Cannot open sudoers file!"); }
+	
+	// go through the sudoers file
+	foreach ( $file as $line ) {
+		// if the sudoers line is not found, write to the files
+		if( strpos($line, "$bash    ALL = NOPASSWD: /root/bin/backup $bash *,/root/bin/import $bash *,/root/bin/reload $bash,/root/bin/subdomain $bash,/root/bin/pass $login") === false ) {
+			// write the original line
+			if( fwrite($fpipe, $line) === false ) { mlog("remove.rewritesudoers",FATAL,"Could not write to sudoers file!"); }
+		}
+	}
+
+	fclose($fpipe);
+
+	// process the ports.conf file
+	while( $port = mysql_fetch_array($ports) ) {
+		// read ports files and prepare to write
+		$file = file($portpath);
+		if( !$fpipe = fopen($portpath,'w') ) { mlog("remove.rewriteports",FATAL,"Cannot open ports file!"); }
+
+		// go through the ports file
+		foreach ( $file as $line ) {
+			// if the port is not found
+			if( strpos($line, "Listen " . $results['ip'] . ":" . $port['port']) === false ) {
+				// write the line
+				if( fwrite($fpipe, $line) === false ) { mlog("remove.rewriteports",FATAL,"Could not write to ports file!"); }
+			}
+		}
+
+		fclose($fpipe);
+	}
+	mlog("remove.main",!FATAL,"Successfully removed sudo user and ports.");
 }
 
 // Function: write_htaccess

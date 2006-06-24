@@ -42,26 +42,6 @@ function getinput($prompt) {
 	return trim(fread(STDIN,255));
 }
 
-// Function: remove
-// Purpose:  removes lines containing search, and a # of lines following that
-// Requires: string - search line to be removed (use full line if you only want that line
-//           string - the location of the file to modify
-function remove($search,$filepath) {
-	// verify file exists
-	if( !file_exists($filepath) ) { mlog("function.remove",FATAL,"Could not open file: $filepath."); }
-	// read the file into an array
-	if( !$file = file($filepath) ) { mlog("function.remove",FATAL,"Could not read file: $filepath."); }
-	// open the file for re-writing
-	if( !$fpipe = fopen($filepath,'w') ) { mlog("function.remove",FATAL,"Could not write to file: $filepath."); }
-
-	foreach ($fpipe as $line) {
-		// if we didn't find the line
-		if( strpos($line,$search) === false ) {fwrite($fpipe,$line); }
-	}
-	
-	fclose($fpipe);
-}
-
 // Function: write_subdomain
 // Purpose:  appends subdomain configuration information to the apache.conf file
 // Requires: string - valid IP address of the site
