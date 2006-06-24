@@ -45,9 +45,8 @@ function getinput($prompt) {
 // Function: remove
 // Purpose:  removes lines containing search, and a # of lines following that
 // Requires: string - search line to be removed (use full line if you only want that line
-//           integer - the number of lines to remove following that line (0 for default)
 //           string - the location of the file to modify
-function remove($search,$num,$filepath) {
+function remove($search,$filepath) {
 	// verify file exists
 	if( !file_exists($filepath) ) { mlog("function.remove",FATAL,"Could not open file: $filepath."); }
 	// read the file into an array
@@ -55,21 +54,11 @@ function remove($search,$num,$filepath) {
 	// open the file for re-writing
 	if( !$fpipe = fopen($filepath,'w') ) { mlog("function.remove",FATAL,"Could not write to file: $filepath."); }
 
-	$enabled = false;
-	$count = 0;
-	foreach ($finput as $line) {
-		// if we have matched, are we still skipping the line?
-		if( $enabled ) {
-			$count += 1;
-			if( $count > $num ) { 
-				$enabled = false;
-				$count = 0;
-			}
-		// else see if this line is a match
-		} else if( strpos($line,$search) === false ) { 
-			fwrite($fpipe,"$line");
-		}
+	foreach ($fpipe as $line) {
+		// if we didn't find the line
+		if( strpos($line,$search) === false ) {fwrite($fpipe,$line); }
 	}
+	
 	fclose($fpipe);
 }
 

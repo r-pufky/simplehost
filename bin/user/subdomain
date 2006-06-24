@@ -1,0 +1,3 @@
+#!/bin/sh
+# wraps changepass with the current useraname and passes to sudo
+sudo /root/bin/subdomain `whoami`

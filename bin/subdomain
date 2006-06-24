@@ -13,7 +13,6 @@ if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
 // load configuration and logging
 require("includes/config.inc.php");
 require("includes/functions.inc.php");
-require("includes/files.inc.php");
 
 // find out if we were launched correctly (with the username who launched us passed)
 if( $_SERVER['argc'] != 2 ) { mlog("subdomain.checkvaliduser",FATAL,"Invalid user used to launch subdomain."); }
@@ -21,23 +20,22 @@ if( $_SERVER['argc'] != 2 ) { mlog("subdomain.checkvaliduser",FATAL,"Invalid use
 // grab domain information from database
 $domain = str_replace("-",".",strtolower($argv[1]));
 mlog("subdomain.addsubdomain",!FATAL,"Request to add subdomain to $domain.");
-if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { 
-	mlog("subdomain.checkdomain",FATAL,"Cannot retrieve domain from database."); 
-}
 
-$bash = $results['username'];
-$ip = $results['ip'];
+// grab information for domain, or error
+if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("subdomain.checkdomain",FATAL,"Cannot retrieve domain from database."); }
+
+$bash = $results['bash'];
+$ip = $results['ip'];	
 $id = $results['id'];
 
 // grab subdomain information
 $subdomain = getinput("Enter desired subdomain [i.e. test.abc.com -> test]: ");
 
-if( $results = mysql_fetch_array(mque("select * from subdomains where subdomain='$subdomain'")) ) { 
-	mlog("subdomain.checksubdomain",FATAL,"Subdomain $subdomain.$domain already exists!");
-}
+// verify subdomain does not exist
+if( $results = mysql_fetch_array(mque("select * from subdomains where subdomain='$subdomain'")) ) { mlog("subdomain.checksubdomain",FATAL,"Subdomain $subdomain.$domain already exists!"); }
 if( file_exists("/home/$bash/www/$subdomain") ) { mlog("subdomain.checkdirectory",FATAL,"/home/$bash/www/$subdomain already exists!"); }
 
-// update database
+// update database with new subdomain information
 mque("insert into subdomains (did,subdomain) values('$id','$subdomain')");
 mlog("subdomain.insertsubdomain",!FATAL,"Inserted $subdomain.$domain table information.");
 
@@ -53,6 +51,5 @@ echo("\nCreated $subdomain.$domain subdomain.");
 mlog("subdomain.addsubdomain",!FATAL,"$subdomain.$domain added successfully!");
 echo("\nReloading apache2... ");
 exec("/etc/init.d/apache2 reload");
-echo "done!\n\nCreated '$subdomain.$domainname'.\n\tIf configuration needs to be changed, contact admin to reload the subdomain.\n\n";
-mlog($did,"main",!$fatal,"Created $subdomain.$domainname successfully.");
+echo "done!\n\nCreated '$subdomain.$domainname'.\n\nRemember -- you must MANUALLY delete your subdomains!\n";
 ?>

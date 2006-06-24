@@ -80,7 +80,7 @@ function add($domain) {
 
 	// enable the website
 	echo("\nEnabling user and website... ");
-	exec("/root/bin/passwd-noninteractive.exp $bash changeme > /dev/null");
+	exec("/root/bin/passwd.exp $bash changeme > /dev/null");
 	exec("ifup eth0:" . $results['id']);
 	exec("a2ensite $domain");
 	exec("/etc/init.d/apache2 reload");
@@ -89,10 +89,10 @@ function add($domain) {
 	echo "\n\nLogin username:   $bash\nDB Username:      $mysql\nDB Name:          $mysql\nDefault password: changeme\n\n";
 }
 
-// Function: delete
+// Function: del
 // Purpose:  delete a domain on the system
 // Requires: string - the domain to be deleted
-function deleteme($domain) {
+function del($domain) {
 	global $rootpass;
 	
 	mlog("hostmodify.delete",!FATAL,"Request to delete $domain.");
@@ -102,28 +102,35 @@ function deleteme($domain) {
 	exec("a2dissite $domain");
 	exec("ifdown eth0:" . $results['id']);
 	exec("rm /etc/apache2/sites-available/$domain");
+	echo("\nDisabled network interface and apache.");
 
 	// delete the user account and home directory
 	exec("deluser " . $results['bash']);
 	exec("rm -rf /home/" . $results['bash']);
+	echo("\nDeleted user account.");
 
 	// delete the user database / user, and reload mysql
 	exec("mysql -u root -p$rootpass -e 'drop database " . $results['mysql'] . "'");
 	exec("mysql -u root -p$rootpass -e \"delete from mysql.user where Host='localhost' and User='" . $results['mysql'] . "'\"");
 	exec("mysql -u root -p$rootpass -e \"flush privileges\"");
+	echo("\nDeleted database.");
 
 	// remove from sudoers file, apache port configuration, and network configuration
-	remove($results['domain'],0,"/etc/sudoers");
-	remove($results['ip'],0,"/etc/apache2/ports.conf");
-	remove("iface eth0:" . $results['id'] . " inet static",2,"/etc/network/interfaces");
+	remove($results['bash'],"/etc/sudoers");
+	remove($results['ip'],"/etc/apache2/ports.conf");
+	//remove("iface eth0:" . $results['id'] . " inet static",2,"/etc/network/interfaces");
+	echo("\nRemoved configuration information.");
 
 	// remove domain from database and reload apache
-	mquery("delete from ports where did='" . $results['id'] . "'");
-	mquery("delete from subdomains where did='" . $results['id'] . "'");
-	mquery("delete from domains where id='" . $results['id'] . "'");
+	mque("delete from ports where did='" . $results['id'] . "'");
+	mque("delete from subdomains where did='" . $results['id'] . "'");
+	mque("delete from domains where id='" . $results['id'] . "'");
+	echo("\nRemoved domain from database.\nReloading apache...");
 	exec("/etc/init.d/apache2 reload");
+	echo("done!");
 	
 	mlog("hostmodify.delete",!FATAL,"Deleted $domain.");
+	echo("\n\ndomain has been deleted.\n\n");
 }
 
 // Function: write_apache2

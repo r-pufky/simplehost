@@ -1,0 +1,53 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 6-16-2006 
+  
+  Backup user's mysql database
+*/
+
+// get current run date.
+$date = date("Y-m-d");
+
+// load the password
+require_once("config.inc.php");
+
+		// modify username for db name
+		$dbname = str_replace("-","_",$user);
+	
+		// create a directory and secure it
+		$dir = "/tmp/$date";
+		if( !is_dir($dir) ) { mkdir($dir,0700); }
+
+		// connect to the data base
+		mysql_connect("localhost", "root", "$pass");
+
+		// dump their db to the tempdirectory, package, store and secure db
+		$userstore = "/home/$user/backup/";
+		echo ".";
+		`$path/mysqldump -u root -p$pass $dbname > $dir/$dbname.dump`;
+		echo ".";
+		`cd /tmp/; $path/zip $date $date/*`;
+		echo ".";
+		`mv -f /tmp/$date.zip $userstore; chmod 400 $userstore$date.zip; chown $user:$user $userstore$date.zip`;
+		echo ".";
+
+		// clean up temp diectory
+		`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
+		echo ".\n";
+	}
+}
+
+// now just have a master backup incase
+if (!is_dir($dir)) { mkdir($dir,0700); }
+
+// dump the datanase and zip it up.
+`$path/mysqldump -u root -p$pass --all-databases > $dir/databases.dump`;
+
+// after done, compress the dump and store it
+`cd /tmp/; $path/zip $date $date/*`;
+`mv -f /tmp/$date.zip $masterstore; chmod 400 $masterstore$date.zip; chown root:root $masterstore$date.zip`;
+// clean up temp diectory
+`rm -f /tmp/$date.zip; rm -rf /tmp/$date`;
+?>
