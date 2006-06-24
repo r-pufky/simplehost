@@ -18,7 +18,8 @@ switch(strtolower($command)) {
 	case "backup" : { backup(); } break;
 	case "reload" : { reload(); } break;
 	case "import" : { import(); } break;
-	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\nimport\n\n"); }
+	case "openweb" : { openweb(); } break;
+	default : { die("\nUsage: helpme <host_command>\n\nhosting commands:\nsubdomain\nbackup\nreload\nimport\nopenweb\n\n"); }
 }
 
 function subdomain() {
@@ -51,5 +52,12 @@ function import() {
 	echo "\n\tCommand:\n\n\t\t import <mysql_import_file>";
 	echo "\n\n\tOptions:\n\n\t\t <mysql_import_file> - the mysql formatted database file (i.e. backups) to import.  Should use full filepath.";
 	echo "\n\n\tPurpose:\n\n\t\t Imports database information into your mysql database.  Useful for restoring from backups, or setting up inital database.\n\n";
+}
+
+function openweb() {
+	global $user;
+	echo "\nOPENWEB";
+	echo "\n\tCommand:\n\n\t\t openweb";
+	echo "\n\n\tPurpose:\n\n\t\t Sets correct system group for apache to view all of your webpages.\n\t\t If you get permission denied errors, can't view your page, etc; this is what is causing it.\n\n";
 }
 ?>
