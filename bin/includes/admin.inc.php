@@ -38,7 +38,7 @@ function add($domain) {
 	$name = getinput("Enter contact name");
 
 	// insert domain, pull domain information and insert port information
-	mque("insert into domains (domain,ip,name,email,password,mysql,bash,gallery2) values('$domain','$ip','$name','$mail','changeme','$mysql','$bash','N')");
+	mque("insert into domains (domain,ip,name,email,password,mysql,bash,gallery2) values('$domain','$ip','$name','$email','changeme','$mysql','$bash','N')");
 	$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'"));
 	mque("insert into ports (did,port) values('" . $results['id'] . "','80')");
 	mque("insert into ports (did,port) values('" . $results['id'] . "','443')");
