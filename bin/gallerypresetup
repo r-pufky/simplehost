@@ -15,7 +15,7 @@ require("includes/config.inc.php");
 require("includes/functions.inc.php");
 
 // find out if we were launched correctly (with the username who launched us passed)
-if( $_SERVER['argc'] != 2 ) { mlog("gallerypresetup.checkvaliduser",FATAL,"Invalid user used to launch gallerypresetup."); }
+if( $_SERVER['argc'] != 2 ) { mlog("gallerypresetup.checkvaliduser",FATAL,"Invalid domain entered for gallery pre setup."); }
 
 // grab domain information from database
 $domain = str_replace("-",".",strtolower($argv[1]));
@@ -44,5 +44,5 @@ echo("\nSetup inital permission for gallery2.");
 mque("update domains set gallery2='Y' where id='" . $results['id'] . "'");
 mlog("gallerypresetup.insertgallery",!FATAL,"Inserted " . $results['domain'] . " gallery2 table information.");
 mlog("gallerypresetup.main",!FATAL,"Setup inital gallery2 for " . $results['domain']);
-echo("\n\nNavigate to http://<SIPA>/gallery2 to finish configuration for this domain\n\nRemember to run 'gallerypostsetup' afterwards! (This is critical)\n");
+echo("\n\nNavigate to http://$serverip/gallery2 to finish configuration for this domain\n\nRemember to run 'gallerypostsetup' afterwards! (This is critical)\n");
 ?>

@@ -16,7 +16,7 @@ require("includes/functions.inc.php");
 require("includes/admin.inc.php");
 
 // find out if we were launched correctly (with the username who launched us passed)
-if( $_SERVER['argc'] != 2 ) { mlog("gallerypostsetup.checkvaliduser",FATAL,"Invalid user used to launch gallerypresetup."); }
+if( $_SERVER['argc'] != 2 ) { mlog("gallerypostsetup.checkvaliduser",FATAL,"Invalid domain for gallery post setup."); }
 
 // grab domain information from database
 $domain = str_replace("-",".",strtolower($argv[1]));

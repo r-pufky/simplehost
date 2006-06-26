@@ -13,4 +13,8 @@ $dbserver = 'localhost';
 
 // root password
 $rootpass = 'ENTER_PASSWORD';
+
+// base apache server ip and port (we run host off strictly SSL)
+$serverip = "10.100.200.1";
+$serverport = "80";
 ?>

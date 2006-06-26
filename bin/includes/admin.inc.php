@@ -66,6 +66,7 @@ function add($domain) {
 	exec("chmod o+rx /home/$bash");
 	exec("chmod -R 750 /home/$bash/backup /home/$bash/www /home/$bash/etc");
 	exec("chmod 660 /home/$bash/etc/*");
+	exec("chmod 660 /home/$bash/www/$domain/admin/.htaccess");
 	exec("chmod 600 /home/$bash/logs/*");
 	exec("chown -R $bash:www-data /home/$bash/www /home/$bash/etc");
 	exec("chown -R $bash:$bash /home/$bash/backup /home/$bash/logs");
@@ -77,8 +78,7 @@ function add($domain) {
 	echo("\nCreated database and secured.");
 
 	// write sudoers execution permissions and apache port files out
-	write_sudoers($bash);
-	write_ports($results['id'],$ip);
+	write_configs();
 	echo("\nCreated port configuration.");
 
 	// enable the website
@@ -120,15 +120,17 @@ function del($domain) {
 	exec("mysql -u root -p$rootpass -e \"flush privileges\"");
 	echo("\nDeleted database.");
 
-	// remove from sudoers file, apache port configuration
-	remove($results['id']);
-	echo("Removed configuration information.");
-
 	// remove domain from database and reload apache
 	mque("delete from ports where did='" . $results['id'] . "'");
 	mque("delete from subdomains where did='" . $results['id'] . "'");
 	mque("delete from domains where id='" . $results['id'] . "'");
-	echo("\nRemoved domain from database.\nReloading apache...");
+	echo("\nRemoved domain from database.");
+	
+	// reload configuration files for sudoers and ports.conf
+	write_configs();
+	echo("\nRemoved configuration information.");
+	
+	echo("\nReloading apache...");
 	exec("/etc/init.d/apache2 reload");
 	echo("done!");
 	
@@ -169,25 +171,33 @@ function write_apache2($ip,$login,$domain) {
   Options none
 </VirtualHost>' > /home/$login/etc/apache.conf");
 
-	exec("ln -s /home/$bash/etc/apache.conf /etc/apache2/sites-available/$domain");
+	exec("ln -s /home/$login/etc/apache.conf /etc/apache2/sites-available/$domain");
 }
 
-// Function: write_sudoers
-// Purpose:  writes the sudoers configuration to the sudoers file
-// Requires: string - login name of the user
-function write_sudoers($login) {
-	exec("echo '$login    ALL = NOPASSWD: /root/bin/backup $login *,/root/bin/import $login *,/root/bin/reload $login,/root/bin/subdomain $login,/root/bin/pass $login' >> /etc/sudoers");
-}
+// Function: write_configs
+// Purpose:  writes an entirely new /etc/sudoers and /etc/apache2/ports.conf file from database
+// Requires: none
+function write_configs() {
+	global $serverip;
+	global $serverport;
 
-// Function: write_ports
-// Purpose:  write the apache2 port configuration to the ports.conf file
-// Requires: string - the database id of the domain
-//           string - valid IP of the domain
-function write_ports($id,$ip) {
-	$results = mque("select * from ports where did='" . $id . "'");
+	// grab a list of domains
+	$domains = mque("select * from domains");
 
-	while( $port = mysql_fetch_array($results) ) {
-		exec("echo -e -n '\nListen $ip:" . $port['port'] . "' >> /etc/apache2/ports.conf");
+	// set config files to their default state
+	exec("echo '' > /etc/sudoers;echo 'Listen $serverip:$serverport' > /etc/apache2/ports.conf");
+
+	// go through each domain
+	while( $domain = mysql_fetch_array($domains) ) {
+		$bash = $domain['bash'];
+		// write sudoers information
+		exec("echo '$bash    ALL = NOPASSWD: /root/bin/backup $bash *,/root/bin/import $bash *,/root/bin/reload $bash,/root/bin/subdomain $bash,/root/bin/pass $bash' >> /etc/sudoers");
+
+		// write apache information
+		$results = mque("select * from ports where did='" . $domain['id'] . "'");
+		while( $port = mysql_fetch_array($results) ) {
+			exec("echo -e -n '\nListen " . $domain['ip'] . ":" . $port['port'] . "' >> /etc/apache2/ports.conf");
+		}
 	}
 }
 
@@ -248,7 +258,7 @@ Function remove($id) {
 	// process the sudoers file
 	$bash = $results['bash'];
 
-	rewrite_file("/etc/sudoers","$bash    ALL = NOPASSWD: /root/bin/backup $bash *,/root/bin/import $bash *,/root/bin/reload $bash,/root/bin/subdomain $bash,/root/bin/pass $login","remove.rewritesudoers");
+	rewrite_file("/etc/sudoers","$bash    ALL = NOPASSWD: /root/bin/backup $bash *,/root/bin/import $bash *,/root/bin/reload $bash,/root/bin/subdomain $bash,/root/bin/pass $bash","remove.rewritesudoers");
 	
 	// process the ports.conf file
 	while( $port = mysql_fetch_array($ports) ) {
@@ -299,16 +309,24 @@ Function write_admin($id) {
 	// grab domain information
 	if( !$results = mysql_fetch_array(mque("select * from domains where id='$id'")) ) { mlog("add.write_admin",FATAL,"Could not load domain with id $id"); }
 	// setup htpasswd file with domain account (forcing md5 hash)
-	exec("/usr/bin/htpasswd2 -bcm /home/" . $results['bash'] . "/etc/htpasswd " . $results['bash'] . " " . $results['password']);
-	exec("chmod 640 /etc/" . $results['bash'] . "/etc/htpasswd");
-
+	exec("/usr/bin/htpasswd2 -bcm /home/" . $results['bash'] . "/etc/htpasswd " . $results['bash'] . " " . $results['password'] . " 2>&1 > /dev/null");
+	exec("chmod 640 /home/" . $results['bash'] . "/etc/htpasswd");
 	// write .htaccess file for administrative area
 	exec("echo '# Administrative htaccess file - DO NOT CHANGE or your admin area could become insecure
 SSLRequireSSL
 AuthType Basic
 AuthName " . $results['domain'] . "
 AuthUserFile /home/" . $results['bash'] . "/etc/htpasswd
-Require valid-user' > /etc/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/.htaccess");
+Require valid-user
+Options indexes' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/.htaccess");
+
+	// write simple administration links for idiots
+	exec("echo '<HTML>
+<body>
+<a href='analog/'>Analog log files</a><br>
+<a href='phpmyadmin/index.php'>phpmyadmin</a>
+</body>
+</HTML>' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/index.html");
 }
 
 // Function: write_logrotate
@@ -316,7 +334,10 @@ Require valid-user' > /etc/" . $results['bash'] . "/www/" . $results['domain'] .
 // Requires: string - the bash user name
 //           string - the domain name
 Function write_logrotate($bash,$domain) {
-	exec("echo '#You REALLY should have NO NEED to modify this file.
+	// must do it the slow way as the logrotate command is interperated as a shell command
+	if( !$fpipe = fopen("/home/$bash/etc/logrotate.conf",'w') ) { mlog("add.logrotate",FATAL,"Cannot write to logrotate file!"); }
+	
+	fwrite($fpipe, "# You REALLY should have NO NEED to modify this file.
 # If you mess up the configuration, your log rotations will STOP WORKING!
 # Advanced users only please!  Contact Gabe or Bob with questions!
 # This script is automatically run every day at 11:30 PM.
@@ -329,8 +350,8 @@ Function write_logrotate($bash,$domain) {
   compress
   copytruncate
   notifempty
-}' > /home/$bash/etc/logrotate.conf");
-
+}");
+	fclose($fpipe);
 	exec("ln -s /home/$bash/etc/logrotate.conf /etc/logrotate.d/$domain");
 }
 
