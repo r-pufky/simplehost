@@ -46,15 +46,17 @@ function add($domain) {
 	echo("\nCreated domain account.");
 
 	// the interface number for the ethernet card is the domains id
-	write_interfaces($ip,$results['id']);
+	write_interfaces($ip,$results['id'],$domain);
 	
 	// create the bash user, default directories, and base files
 	exec("adduser --disabled-login --gecos '$domain' $bash");
 	exec("addgroup $bash www-data");
-	exec("mkdir /home/$bash/backup /home/$bash/www /home/$bash/www/$domain /home/$bash/logs /home/$bash/etc");
+	exec("mkdir -p /home/$bash/www/$domain/admin/analog /home/$bash/www/$domain/admin/phpmyadmin");
+	exec("mkdir /home/$bash/backup /home/$bash/logs /home/$bash/etc");
+	write_admin($results['id']);
 	write_apache2($ip,$bash,$domain);
-	write_logrotate($bash);
-	write_analog($bash);
+	write_logrotate($bash,$domain);
+	write_analog($bash,$domain);
 	exec("touch /home/$bash/logs/$domain-error.log /home/$bash/logs/$domain-access.log");
 	exec("touch /home/$bash/logs/ssl-$domain-error.log /home/$bash/logs/ssl-$domain-access.log");
 	echo("\nCreated base directories and configuration files.");
@@ -63,8 +65,7 @@ function add($domain) {
 	exec("chmod -R o-rwx /home/$bash");
 	exec("chmod o+rx /home/$bash");
 	exec("chmod -R 750 /home/$bash/backup /home/$bash/www /home/$bash/etc");
-	exec("chmod 660 /home/$bash/etc/apache.conf");
-	exec("chmod 660 /home/$bash/etc/logrotate.conf");
+	exec("chmod 660 /home/$bash/etc/*");
 	exec("chmod 600 /home/$bash/logs/*");
 	exec("chown -R $bash:www-data /home/$bash/www /home/$bash/etc");
 	exec("chown -R $bash:$bash /home/$bash/backup /home/$bash/logs");
@@ -106,7 +107,6 @@ function del($domain) {
 	exec("ifdown eth0:" . $results['id']);
 	exec("rm /etc/apache2/sites-available/$domain");
 	exec("rm /etc/logrotate.d/$domain");
-	exec("rm /etc/analog/$domain");
 	echo("\nDisabled network interface and apache.");
 
 	// delete the user account and home directory
@@ -195,8 +195,9 @@ function write_ports($id,$ip) {
 // Purpose:  write the given interface to the interfaces file
 // Requires: string - valid IP address to add
 //           integer - the number of the interface to add
-function write_interfaces($ip,$num) {
-	exec("echo -e -n '\n\niface eth0:$num inet static\naddress $ip\nnetmask 255.255.255.0' >> /etc/network/interfaces");
+//           string - the domain name
+function write_interfaces($ip,$num,$domain) {
+	exec("echo -e -n '\n\n# Interface for $domain\niface eth0:$num inet static\naddress $ip\nnetmask 255.255.255.0' >> /etc/network/interfaces");
 }
 
 // Function: write_gallery
@@ -238,58 +239,51 @@ Function write_gallery($domain,$bash,$mysql,$pass) {
 
 // Function: remove
 // Purpose:  removes sites configuration information from /etc/sudoers and /etc/apache2/ports.conf
-// Rquires:  string - the id of the domain
+// Requires:  string - the id of the domain
 Function remove($id) {
-	$sudopath = "/etc/sudoers";
-	$portpath = "/etc/apache2/ports.conf";
-	
 	// grab domain and port information
 	if( !$results = mysql_fetch_array(mque("select * from domains where id='" . $id . "'")) ) { mlog("remove.checkdomain",FATAL,"Domain not found!"); }
 	if( !$ports = mque("select * from ports where did='" . $id . "'") ) { mlog("remove.checkports",FATAL,"No ports found!"); }
 
 	// process the sudoers file
 	$bash = $results['bash'];
-	$file = file($sudopath);
+
+	rewrite_file("/etc/sudoers","$bash    ALL = NOPASSWD: /root/bin/backup $bash *,/root/bin/import $bash *,/root/bin/reload $bash,/root/bin/subdomain $bash,/root/bin/pass $login","remove.rewritesudoers");
 	
+	// process the ports.conf file
+	while( $port = mysql_fetch_array($ports) ) {
+		rewrite_file("/etc/apache2/ports.conf","Listen " . $results['ip'] . ":" . $port['port'],"remove.rewriteports");
+	}
+	
+	mlog("remove.main",!FATAL,"Successfully removed sudo user and ports.");
+}
+
+// Function: rewrite_file
+// Purpose:  rewrites given file, minus specified line
+// Requires: string - file to open
+//           string - exact line to remove
+//           string - reporting function if an error occurs
+Function rewrite_file($path,$search,$error) {
 	// attempt to open sudoers file for writing
-	if( !$fpipe = fopen($sudopath,'w') ) { mlog("remove.rewritesudoers",FATAL,"Cannot open sudoers file!"); }
+	if( !$fpipe = fopen($path,'w') ) { mlog($error,FATAL,"Cannot open $path file!"); }
 	
-	// go through the sudoers file
+	// go through the ports file
 	foreach ( $file as $line ) {
-		// if the sudoers line is not found, write to the files
-		if( strpos($line, "$bash    ALL = NOPASSWD: /root/bin/backup $bash *,/root/bin/import $bash *,/root/bin/reload $bash,/root/bin/subdomain $bash,/root/bin/pass $login") === false ) {
-			// write the original line
-			if( fwrite($fpipe, $line) === false ) { mlog("remove.rewritesudoers",FATAL,"Could not write to sudoers file!"); }
+		// if the port is not found
+		if( strpos($line,$search) === false ) {
+			// write the line
+			if( fwrite($fpipe, $line) === false ) { mlog($error,FATAL,"Could not write to $path file!"); }
 		}
 	}
 
 	fclose($fpipe);
-
-	// process the ports.conf file
-	while( $port = mysql_fetch_array($ports) ) {
-		// read ports files and prepare to write
-		$file = file($portpath);
-		if( !$fpipe = fopen($portpath,'w') ) { mlog("remove.rewriteports",FATAL,"Cannot open ports file!"); }
-
-		// go through the ports file
-		foreach ( $file as $line ) {
-			// if the port is not found
-			if( strpos($line, "Listen " . $results['ip'] . ":" . $port['port']) === false ) {
-				// write the line
-				if( fwrite($fpipe, $line) === false ) { mlog("remove.rewriteports",FATAL,"Could not write to ports file!"); }
-			}
-		}
-
-		fclose($fpipe);
-	}
-	mlog("remove.main",!FATAL,"Successfully removed sudo user and ports.");
 }
 
-// Function: write_htaccess
-// Purpose:  writes htaccess file for gallyer to prevent people browsing
+// Function: write_htgallery
+// Purpose:  writes htaccess file for gallery to prevent people browsing
 // Requires: string - the domain name
 //           string - the bash user name
-Function write_htaccess($domain,$bash) {
+Function write_htgallery($bash,$domain) {
 	exec("echo '<Files ~ \"\\.(inc|class)$\">
   Deny from all
 </Files>
@@ -298,23 +292,43 @@ Function write_htaccess($domain,$bash) {
 </Files>' > /home/$bash/www/$domain/gallery2/.htaccess");
 }
 
+// Function: write_admin
+// Purpose:  sets up and writes administration section of domains website
+// Requires: integer - the database id of the domain to setup
+Function write_admin($id) {
+	// grab domain information
+	if( !$results = mysql_fetch_array(mque("select * from domains where id='$id'")) ) { mlog("add.write_admin",FATAL,"Could not load domain with id $id"); }
+	// setup htpasswd file with domain account (forcing md5 hash)
+	exec("/usr/bin/htpasswd2 -bcm /home/" . $results['bash'] . "/etc/htpasswd " . $results['bash'] . " " . $results['password']);
+	exec("chmod 640 /etc/" . $results['bash'] . "/etc/htpasswd");
+
+	// write .htaccess file for administrative area
+	exec("echo '# Administrative htaccess file - DO NOT CHANGE or your admin area could become insecure
+SSLRequireSSL
+AuthType Basic
+AuthName " . $results['domain'] . "
+AuthUserFile /home/" . $results['bash'] . "/etc/htpasswd
+Require valid-user' > /etc/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/.htaccess");
+}
+
 // Function: write_logrotate
 // Purpose:  writes a default logrotate configuration file for user and links it
 // Requires: string - the bash user name
-Function write_logrotate($bash) {
+//           string - the domain name
+Function write_logrotate($bash,$domain) {
 	exec("echo '#You REALLY should have NO NEED to modify this file.
 # If you mess up the configuration, your log rotations will STOP WORKING!
 # Advanced users only please!  Contact Gabe or Bob with questions!
 # This script is automatically run every day at 11:30 PM.
 #
-# compress, missing log files will not give error, will use same logfile
-# rotate every 2 megs, keep last 6 rotates
+# By default, weekly log rotations, with a year's worth of logs stored.
 /home/$bash/logs/*.log {
-	size 2M
-	rotate 6
-	compress
-	copytruncate
-	missingok
+  weekly
+  missingok
+  rotate 52
+  compress
+  copytruncate
+  notifempty
 }' > /home/$bash/etc/logrotate.conf");
 
 	exec("ln -s /home/$bash/etc/logrotate.conf /etc/logrotate.d/$domain");
@@ -323,9 +337,9 @@ Function write_logrotate($bash) {
 // Function: write_analog
 // Purpose:  writes a default analog web analyzer configuration file for user, links it, and 
 //           updates the cronjob for analog
-// Requires: string - the domain name
-//           string - the bash name
-Function write_analog($domain,$bash) {
+// Requires: string - the bash user name
+//           string - the domain name
+Function write_analog($bash,$domain) {
 	exec("echo '#You REALLY shoud have NO NEED to modify this file.
 # If you mess up the configuration, your website analysis will STOP WORKING!
 # Advanced user only please!  Contact Gabe or Bob with questions!
@@ -411,43 +425,43 @@ SEARCHENGINE http://*netfind.*/* query,search,s
 SEARCHENGINE http://*/netfind* query
 SEARCHENGINE http://*/pursuit query
 BROWOUTPUTALIAS Mozilla Netscape
-BROWOUTPUTALIAS "Mozilla (compatible)" "Netscape (compatible)"
+BROWOUTPUTALIAS \"Mozilla (compatible)\" \"Netscape (compatible)\"
 BROWOUTPUTALIAS IWENG AOL
-TYPEOUTPUTALIAS .html ".html [Hypertext Markup Language]"
-TYPEOUTPUTALIAS .htm ".htm [Hypertext Markup Language]"
-TYPEOUTPUTALIAS .shtml ".shtml [Server-parsed HTML]"
-TYPEOUTPUTALIAS .ps ".ps [PostScript]"
-TYPEOUTPUTALIAS .gz ".gz [Gzip compressed files]"
-TYPEOUTPUTALIAS .tar.gz ".tar.gz [Compressed archives]"
-TYPEOUTPUTALIAS .jpg ".jpg [JPEG graphics]"
-TYPEOUTPUTALIAS .jpeg ".jpeg [JPEG graphics]"
-TYPEOUTPUTALIAS .gif ".gif [GIF graphics]"
-TYPEOUTPUTALIAS .png ".png [PNG graphics]"
-TYPEOUTPUTALIAS .txt ".txt [Plain text]"
-TYPEOUTPUTALIAS .cgi ".cgi [CGI scripts]"
-TYPEOUTPUTALIAS .pl ".pl [Perl scripts]"
-TYPEOUTPUTALIAS .css ".css [Cascading Style Sheets]"
-TYPEOUTPUTALIAS .class ".class [Java class files]"
-TYPEOUTPUTALIAS .pdf ".pdf [Adobe Portable Document Format]"
-TYPEOUTPUTALIAS .zip ".zip [Zip archives]"
-TYPEOUTPUTALIAS .hqx ".hqx [Macintosh archives]"
-TYPEOUTPUTALIAS .exe ".exe [Executables]"
-TYPEOUTPUTALIAS .wav ".wav [WAV sound files]"
-TYPEOUTPUTALIAS .avi ".avi [AVI movies]"
-TYPEOUTPUTALIAS .arc ".arc [Compressed archives]"
-TYPEOUTPUTALIAS .mid ".mid [MIDI sound files]"
-TYPEOUTPUTALIAS .mp3 ".mp3 [MP3 sound files]"
-TYPEOUTPUTALIAS .doc ".doc [Microsoft Word document]"
-TYPEOUTPUTALIAS .rtf ".rtf [Rich Text Format]"
-TYPEOUTPUTALIAS .mov ".mov [Quick Time movie]"
-TYPEOUTPUTALIAS .mpg ".mpg [MPEG movie]"
-TYPEOUTPUTALIAS .mpeg ".mpeg [MPEG movie]"
-TYPEOUTPUTALIAS .asp ".asp [Active Server Pages]"
-TYPEOUTPUTALIAS .jsp ".jsp [Java Server Pages]"
-TYPEOUTPUTALIAS .cfm ".cfm [Cold Fusion]"
-TYPEOUTPUTALIAS .php ".php [PHP]"
-TYPEOUTPUTALIAS .js ".js [JavaScript code]"
-TYPEOUTPUTALIAS .ico ".ico [Icon]"
+TYPEOUTPUTALIAS .html \".html [Hypertext Markup Language]\"
+TYPEOUTPUTALIAS .htm \".htm [Hypertext Markup Language]\"
+TYPEOUTPUTALIAS .shtml \".shtml [Server-parsed HTML]\"
+TYPEOUTPUTALIAS .ps \".ps [PostScript]\"
+TYPEOUTPUTALIAS .gz \".gz [Gzip compressed files]\"
+TYPEOUTPUTALIAS .tar.gz \".tar.gz [Compressed archives]\"
+TYPEOUTPUTALIAS .jpg \".jpg [JPEG graphics]\"
+TYPEOUTPUTALIAS .jpeg \".jpeg [JPEG graphics]\"
+TYPEOUTPUTALIAS .gif \".gif [GIF graphics]\"
+TYPEOUTPUTALIAS .png \".png [PNG graphics]\"
+TYPEOUTPUTALIAS .txt \".txt [Plain text]\"
+TYPEOUTPUTALIAS .cgi \".cgi [CGI scripts]\"
+TYPEOUTPUTALIAS .pl \".pl [Perl scripts]\"
+TYPEOUTPUTALIAS .css \".css [Cascading Style Sheets]\"
+TYPEOUTPUTALIAS .class \".class [Java class files]\"
+TYPEOUTPUTALIAS .pdf \".pdf [Adobe Portable Document Format]\"
+TYPEOUTPUTALIAS .zip \".zip [Zip archives]\"
+TYPEOUTPUTALIAS .hqx \".hqx [Macintosh archives]\"
+TYPEOUTPUTALIAS .exe \".exe [Executables]\"
+TYPEOUTPUTALIAS .wav \".wav [WAV sound files]\"
+TYPEOUTPUTALIAS .avi \".avi [AVI movies]\"
+TYPEOUTPUTALIAS .arc \".arc [Compressed archives]\"
+TYPEOUTPUTALIAS .mid \".mid [MIDI sound files]\"
+TYPEOUTPUTALIAS .mp3 \".mp3 [MP3 sound files]\"
+TYPEOUTPUTALIAS .doc \".doc [Microsoft Word document]\"
+TYPEOUTPUTALIAS .rtf \".rtf [Rich Text Format]\"
+TYPEOUTPUTALIAS .mov \".mov [Quick Time movie]\"
+TYPEOUTPUTALIAS .mpg \".mpg [MPEG movie]\"
+TYPEOUTPUTALIAS .mpeg \".mpeg [MPEG movie]\"
+TYPEOUTPUTALIAS .asp \".asp [Active Server Pages]\"
+TYPEOUTPUTALIAS .jsp \".jsp [Java Server Pages]\"
+TYPEOUTPUTALIAS .cfm \".cfm [Cold Fusion]\"
+TYPEOUTPUTALIAS .php \".php [PHP]\"
+TYPEOUTPUTALIAS .js \".js [JavaScript code]\"
+TYPEOUTPUTALIAS .ico \".ico [Icon]\"
 PAGEINCLUDE *.shtml
 PAGEINCLUDE *.asp
 PAGEINCLUDE *.jsp
@@ -464,13 +478,14 @@ ROBOTINCLUDE Infoseek*
 ROBOTINCLUDE Scooter*
 ROBOTINCLUDE Slurp*
 ROBOTINCLUDE Ultraseek*i' > /home/$bash/etc/analog.conf");
+	exec("chmod 640 /home/$bash/etc/analog.conf");
 
 	// grab all domains and re-write analog cronjob
-	$results = mque("select * from domains");
+	if( !$results = mque("select * from domains") ) { mlog("add.writeanalog",!FATAL,"Could not find any domains to write!"); }
 	$cron = "#!/bin/sh\n\n";
 
-	while( $domain = mysql_fetch_array($result) ) {
-		$cron += "/usr/bin/analog -G +g/home/" . $domain['bash'] . "/etc/analog.conf\n";
+	while( $domain = mysql_fetch_array($results) ) {
+		$cron = $cron . "/usr/bin/analog -G +g/home/" . $domain['bash'] . "/etc/analog.conf\n";
 	}
 
 	// write file and set default permissions

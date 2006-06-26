@@ -35,7 +35,7 @@ cp -f /root/bin/includes/crontab /etc/crontab
 echo -n "done."
 
 # setup motd for users
-echo -e -n "\n\n'helpme' - shows all hosting commands, and instructions on how to use them" > /etc/motd
+echo -e -n "\n\n'helpme' - shows all hosting commands, and instructions on how to use them\n\n" > /etc/motd
 
 # setup motd for admins
-echo -n "\n\nAdmin Commands:\nmbackup - backup all domains (automatically run as daily cronjob)\nhostmodify [add|delete] [domain] - add/delete domain accounts (use root domain)\ngallerypresetup [domain] - run this script BEFORE running web gallery install\ngallerypostsetup [domain] - run this script AFTER running web gallery install" >> /root/.bashrc
+echo -n "echo -e -n \"\n\nAdmin Commands:\n\nmbackup                          - backup all domains databases (automatically run as daily cronjob)\nhostmodify [add|delete] [domain] - add/delete domain accounts (use root domain)\ngallerypresetup [domain]         - run this script BEFORE running web gallery install\ngallerypostsetup [domain]        - run this script AFTER running web gallery install\n\n\"" >> /root/.bashrc

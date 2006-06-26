@@ -40,9 +40,10 @@ mque("update domains set password='" . mysql_real_escape_string($userpass) . "' 
 mlog("pass.updatepassword",!FATAL,"Password updated in database.");
 exec("rm -f /home/" . $results['bash'] . "/passwd");
 
-// change the user's password for bash and mysql
+// change the user's password for bash, mysql and htpasswd
 exec("/root/bin/passwd.exp " . $results['bash'] . " $userpass > /dev/null");
 mque("set password for '" . $results['mysql'] . "'@'localhost' = PASSWORD('$userpass')");
+exec("/usr/bin/htpasswd2 -bm /home/" . $results['bash'] . "/etc/htpasswd " . $results['bash'] . " $userpass");
 echo "password tokens changed.";
 
 mlog("pass.main",!FATAL,"Password updated successfully!");

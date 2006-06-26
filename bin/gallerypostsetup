@@ -29,7 +29,7 @@ if( $results['gallery2'] != 'Y' ) { mlog("gallerypostsetup.checkgallery",FATAL,"
 
 // rewrite the file, but with users database information
 write_gallery($domain,$results['bash'],$results['mysql'],$results['password']);		
-write_htaccess($domain,$results['bash']);
+write_htgallery($results['bash'],$domain);
 
 // secure gallery2 installation
 $gallerypath = "/home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2";
