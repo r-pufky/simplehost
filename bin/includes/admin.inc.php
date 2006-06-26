@@ -51,7 +51,7 @@ function add($domain) {
 	// create the bash user, default directories, and base files
 	exec("adduser --disabled-login --gecos '$domain' $bash");
 	exec("addgroup $bash www-data");
-	exec("mkdir -p /home/$bash/www/$domain/admin/analog /home/$bash/www/$domain/admin/phpmyadmin");
+	exec("mkdir -p /home/$bash/www/$domain/admin/analog/images /home/$bash/www/$domain/admin/phpmyadmin");
 	exec("mkdir /home/$bash/backup /home/$bash/logs /home/$bash/etc");
 	write_admin($results['id']);
 	write_apache2($ip,$bash,$domain);
@@ -523,6 +523,9 @@ ROBOTINCLUDE Scooter*
 ROBOTINCLUDE Slurp*
 ROBOTINCLUDE Ultraseek*i' > /home/$bash/etc/analog.conf");
 	exec("chmod 640 /home/$bash/etc/analog.conf");
+
+	// copy over image files to analog directory
+	exec("cp /usr/share/analog/images/* /home/$bash/www/$domain/admin/analog/images/");
 
 	// grab all domains and re-write analog cronjob
 	if( !$results = mque("select * from domains") ) { mlog("add.writeanalog",!FATAL,"Could not find any domains to write!"); }
