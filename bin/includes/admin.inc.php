@@ -217,6 +217,21 @@ function write_interfaces($ip,$num,$domain) {
 //           string - the mysql user name
 //           string - the mysql password
 Function write_gallery($domain,$bash,$mysql,$pass) {
+	// generate a random password for the core password
+	$gallerycore = "";
+	$charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdfghjklmnpqrstvwxyz"; 
+	
+	// generate a 10 character password
+	$i = 0; 
+	while ($i < 10) { 
+		// pick a random character from the possible ones
+		$char = substr($charset, mt_rand(0, strlen($charset)-1), 1);
+	        if (!strstr($gallerycore, $char)) { 
+			$gallerycore .= $char;
+			$i++;
+		}
+	}
+
 	// read configuration file for gallery2 and make backup
 	$filepath = "/home/$bash/www/$domain/gallery2/config.php";
 	if( !file_exists($filepath) ) { mlog("gallerypostsetup.writeconfig",FATAL,"Gallery configuration file does not exist!"); }
@@ -230,20 +245,28 @@ Function write_gallery($domain,$bash,$mysql,$pass) {
 	// rewrite the file, but with users database information
 	foreach ( $config as $line ) {
 		// if it is a user line, then write it with the user information
-		if( strpos($line, "\$storeConfig['username'] = '") ) {
+		if( strpos($line, "\$storeConfig['username'] = '") !== false ) {
 			if( fwrite($fpipe, "\$storeConfig['username'] = '$mysql';\n") === false ) {
 				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write password to configuration file!");
 			}
 		// if it is a password line then write it with users information
-		} else if( strpos($line, "\$storeConfig['password'] = '") ) {
+		} else if( strpos($line, "\$storeConfig['password'] = '") !== false ) {
 			if( fwrite($fpipe, "\$storeConfig['password'] = '$pass';\n") === false ) {
 				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write password to configuration file!");
+			}
+		// randomize the core password for gallery (used if user forgets their password)
+		} else if( strpos($line, "\$gallery->setConfig('setup.password',") !== false ) {
+			echo "found setup";
+			if( fwrite($fpipe, "\$gallery->setConfig('setup.password','$gallerycore');\n") === false ) {
+				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write core password to configuration file!");
 			}
 		} else {
 			// we don't have the password line, just write it
 			if( fwrite($fpipe, $line) === false ) { mlog("gallerypostsetup.writeconfig",FATAL,"Could not write to configuration file!"); }
 		}
 	}
+
+	exec("rm -f /home/$bash/gallery.config.backup");
 	mlog("gallerypostsetup.writeconfig",!FATAL,"Gallery configuration file written successfully!");
 }
 
