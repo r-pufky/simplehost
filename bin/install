@@ -16,20 +16,26 @@ cp /root/bin/user/* /usr/local/bin
 chmod 0755 /usr/local/bin/*
 echo -n "done."
 
-# make backup directorys
+# make backup directories
 echo -e -n "\nCreating root backup directories... "
 mkdir /root/backup /root/backup/mysql
 chmod -R 0500 /root/backup
 echo -n "done."
 
 # create mysql database
-echo -e -n "\nCreating hosting database (will be prompted for root database password)\n"
+echo -e -n "\nCreating hosting database (will be prompted for root database password)...\n"
 mysql -u root -p -e 'create database DB_NAME'
 mysql -u root -p -e "grant all privileges on DB_NAME.* to 'root'@'localhost'"
 mysql -u root -p DB_PASSWORD < /root/bin/includes/admin.dump
 
+# setup cronjob for backing mysql databases
+echo -e -n "\nSetting up cronjob for daily mysql database backup... "
+cp /root/bin/mbackup /etc/cron.daily/
+cp -f /root/bin/includes/crontab /etc/crontab
+echo -n "done."
+
 # setup motd for users
-echo -e -n "\n\n'helpmp' - shows all hosting commands, and instructions on how to use them" > /etc/motd
+echo -e -n "\n\n'helpme' - shows all hosting commands, and instructions on how to use them" > /etc/motd
 
 # setup motd for admins
-echo -n "\n\nAdmin Commands:\nmbackup - backup all domains (automatically run as daily cronjob\nhostmodify [add|delete] [domain] - add/delete domain accounts (use root domain)\ngallerypresetup [domain] - run this script BEFORE running web gallery install\ngallerypostsetup [domain] - run this script AFTER running web gallery install" >> /root/.bashrc
+echo -n "\n\nAdmin Commands:\nmbackup - backup all domains (automatically run as daily cronjob)\nhostmodify [add|delete] [domain] - add/delete domain accounts (use root domain)\ngallerypresetup [domain] - run this script BEFORE running web gallery install\ngallerypostsetup [domain] - run this script AFTER running web gallery install" >> /root/.bashrc

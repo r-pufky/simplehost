@@ -53,6 +53,8 @@ function add($domain) {
 	exec("addgroup $bash www-data");
 	exec("mkdir /home/$bash/backup /home/$bash/www /home/$bash/www/$domain /home/$bash/logs /home/$bash/etc");
 	write_apache2($ip,$bash,$domain);
+	write_logrotate($bash);
+	write_analog($bash);
 	exec("touch /home/$bash/logs/$domain-error.log /home/$bash/logs/$domain-access.log");
 	exec("touch /home/$bash/logs/ssl-$domain-error.log /home/$bash/logs/ssl-$domain-access.log");
 	echo("\nCreated base directories and configuration files.");
@@ -62,13 +64,11 @@ function add($domain) {
 	exec("chmod o+rx /home/$bash");
 	exec("chmod -R 750 /home/$bash/backup /home/$bash/www /home/$bash/etc");
 	exec("chmod 660 /home/$bash/etc/apache.conf");
+	exec("chmod 660 /home/$bash/etc/logrotate.conf");
 	exec("chmod 600 /home/$bash/logs/*");
 	exec("chown -R $bash:www-data /home/$bash/www /home/$bash/etc");
 	exec("chown -R $bash:$bash /home/$bash/backup /home/$bash/logs");
 	echo("\nSecured directories and configuration files.");
-
-	// link to apache2 master configuration directory
-	exec("ln -s /home/$bash/etc/apache.conf /etc/apache2/sites-available/$domain");
 
 	// create mysql database and secure it
 	exec("mysql -u root -p$rootpass -e 'create database $mysql'");
@@ -105,6 +105,8 @@ function del($domain) {
 	exec("apache2ctl graceful");
 	exec("ifdown eth0:" . $results['id']);
 	exec("rm /etc/apache2/sites-available/$domain");
+	exec("rm /etc/logrotate.d/$domain");
+	exec("rm /etc/analog/$domain");
 	echo("\nDisabled network interface and apache.");
 
 	// delete the user account and home directory
@@ -135,7 +137,7 @@ function del($domain) {
 }
 
 // Function: write_apache2
-// Purpose:  writes the apache2 configuration file to specified location
+// Purpose:  writes the apache2 configuration file to specified location and links it
 // Requires: string - valid IP address of the site
 //           string - login name of the user
 //           string - domain name
@@ -166,6 +168,8 @@ function write_apache2($ip,$login,$domain) {
   CustomLog /home/$login/logs/ssl-$domain-access.log common
   Options none
 </VirtualHost>' > /home/$login/etc/apache.conf");
+
+	exec("ln -s /home/$bash/etc/apache.conf /etc/apache2/sites-available/$domain");
 }
 
 // Function: write_sudoers
@@ -292,5 +296,185 @@ Function write_htaccess($domain,$bash) {
 <Files ~ \"config.php\">
   Deny from all
 </Files>' > /home/$bash/www/$domain/gallery2/.htaccess");
+}
+
+// Function: write_logrotate
+// Purpose:  writes a default logrotate configuration file for user and links it
+// Requires: string - the bash user name
+Function write_logrotate($bash) {
+	exec("echo '#You REALLY should have NO NEED to modify this file.
+# If you mess up the configuration, your log rotations will STOP WORKING!
+# Advanced users only please!  Contact Gabe or Bob with questions!
+# This script is automatically run every day at 11:30 PM.
+#
+# compress, missing log files will not give error, will use same logfile
+# rotate every 2 megs, keep last 6 rotates
+/home/$bash/logs/*.log {
+	size 2M
+	rotate 6
+	compress
+	copytruncate
+	missingok
+}' > /home/$bash/etc/logrotate.conf");
+
+	exec("ln -s /home/$bash/etc/logrotate.conf /etc/logrotate.d/$domain");
+}
+
+// Function: write_analog
+// Purpose:  writes a default analog web analyzer configuration file for user, links it, and 
+//           updates the cronjob for analog
+// Requires: string - the domain name
+//           string - the bash name
+Function write_analog($domain,$bash) {
+	exec("echo '#You REALLY shoud have NO NEED to modify this file.
+# If you mess up the configuration, your website analysis will STOP WORKING!
+# Advanced user only please!  Contact Gabe or Bob with questions!
+# This script is automatically run everyday at 11:30 PM
+#
+# Goto http://www.rix-web.com/analyzer/ for an automatic configuration file maker!
+#
+LOGFILE /home/$bash/logs/*.log
+OUTPUT HTML
+OUTFILE /home/$bash/www/admin/analog/%y%M%D-Statistics.html
+DNS LOOKUP
+general ON
+Monthly ON
+Weekly ON
+Dailysum ON
+DAILYREP OFF
+HOURLYSUM ON
+DOMAIN ON
+ORGANISATION ON
+DIRECTORY ON
+FILETYPE ON
+SIZE ON
+REQUEST ON
+REFERRER ON
+FAILURE ON
+SEARCHQUERY ON
+SEARCHWORD ON
+BROWSERSUM ON
+OSREP ON
+STATUS ON
+DOMSORTBY BYTES
+DOMFLOOR 0b
+ORGSORTBY REQUESTS
+ORGFLOOR 0r
+DIRSORTBY BYTES
+DIRFLOOR 0b
+REQSORTBY REQUESTS
+REQFLOOR 0r
+REQINCLUDE *
+REFSORTBY PAGES
+REFFLOOR 0p
+FROM
+TO
+FILEINCLUDE
+FILEEXCLUDE
+HOSTNAME $domain
+HOSTURL http://www.$domain
+#<----------STATIC VARIABLES --------------------->
+
+IMAGEDIR images/
+DNSGOODHOURS 100000
+DNSBADHOURS 336
+DNSTIMEOUT 10
+DNSLOCKFILE dnslock
+# A list of search engines
+SEARCHENGINE http://*altavista.*/* q
+SEARCHENGINE http://*yahoo.*/* p
+SEARCHENGINE http://*google.*/* q
+SEARCHENGINE http://*lycos.*/* query
+SEARCHENGINE http://*aol.*/* query
+SEARCHENGINE http://*excite.*/* search
+SEARCHENGINE http://*go2net.*/* general
+SEARCHENGINE http://*metacrawler.*/* general
+SEARCHENGINE http://*msn.*/* MT
+SEARCHENGINE http://*hotbot.com/* MT
+SEARCHENGINE http://*netscape.*/* search
+SEARCHENGINE http://*looksmart.*/* key
+SEARCHENGINE http://*infoseek.*/* qt
+SEARCHENGINE http://*webcrawler.*/* search,searchText
+SEARCHENGINE http://*goto.*/* Keywords
+SEARCHENGINE http://*snap.*/* keyword
+SEARCHENGINE http://*dogpile.*/* q
+SEARCHENGINE http://*askjeeves.*/* ask
+SEARCHENGINE http://*ask.*/* ask
+SEARCHENGINE http://*aj.*/* ask
+SEARCHENGINE http://*directhit.*/* qry
+SEARCHENGINE http://*alltheweb.*/* query
+SEARCHENGINE http://*northernlight.*/* qr
+SEARCHENGINE http://*nlsearch.*/* qr
+SEARCHENGINE http://*dmoz.*/* search
+SEARCHENGINE http://*newhoo.*/* search
+SEARCHENGINE http://*netfind.*/* query,search,s
+SEARCHENGINE http://*/netfind* query
+SEARCHENGINE http://*/pursuit query
+BROWOUTPUTALIAS Mozilla Netscape
+BROWOUTPUTALIAS "Mozilla (compatible)" "Netscape (compatible)"
+BROWOUTPUTALIAS IWENG AOL
+TYPEOUTPUTALIAS .html ".html [Hypertext Markup Language]"
+TYPEOUTPUTALIAS .htm ".htm [Hypertext Markup Language]"
+TYPEOUTPUTALIAS .shtml ".shtml [Server-parsed HTML]"
+TYPEOUTPUTALIAS .ps ".ps [PostScript]"
+TYPEOUTPUTALIAS .gz ".gz [Gzip compressed files]"
+TYPEOUTPUTALIAS .tar.gz ".tar.gz [Compressed archives]"
+TYPEOUTPUTALIAS .jpg ".jpg [JPEG graphics]"
+TYPEOUTPUTALIAS .jpeg ".jpeg [JPEG graphics]"
+TYPEOUTPUTALIAS .gif ".gif [GIF graphics]"
+TYPEOUTPUTALIAS .png ".png [PNG graphics]"
+TYPEOUTPUTALIAS .txt ".txt [Plain text]"
+TYPEOUTPUTALIAS .cgi ".cgi [CGI scripts]"
+TYPEOUTPUTALIAS .pl ".pl [Perl scripts]"
+TYPEOUTPUTALIAS .css ".css [Cascading Style Sheets]"
+TYPEOUTPUTALIAS .class ".class [Java class files]"
+TYPEOUTPUTALIAS .pdf ".pdf [Adobe Portable Document Format]"
+TYPEOUTPUTALIAS .zip ".zip [Zip archives]"
+TYPEOUTPUTALIAS .hqx ".hqx [Macintosh archives]"
+TYPEOUTPUTALIAS .exe ".exe [Executables]"
+TYPEOUTPUTALIAS .wav ".wav [WAV sound files]"
+TYPEOUTPUTALIAS .avi ".avi [AVI movies]"
+TYPEOUTPUTALIAS .arc ".arc [Compressed archives]"
+TYPEOUTPUTALIAS .mid ".mid [MIDI sound files]"
+TYPEOUTPUTALIAS .mp3 ".mp3 [MP3 sound files]"
+TYPEOUTPUTALIAS .doc ".doc [Microsoft Word document]"
+TYPEOUTPUTALIAS .rtf ".rtf [Rich Text Format]"
+TYPEOUTPUTALIAS .mov ".mov [Quick Time movie]"
+TYPEOUTPUTALIAS .mpg ".mpg [MPEG movie]"
+TYPEOUTPUTALIAS .mpeg ".mpeg [MPEG movie]"
+TYPEOUTPUTALIAS .asp ".asp [Active Server Pages]"
+TYPEOUTPUTALIAS .jsp ".jsp [Java Server Pages]"
+TYPEOUTPUTALIAS .cfm ".cfm [Cold Fusion]"
+TYPEOUTPUTALIAS .php ".php [PHP]"
+TYPEOUTPUTALIAS .js ".js [JavaScript code]"
+TYPEOUTPUTALIAS .ico ".ico [Icon]"
+PAGEINCLUDE *.shtml
+PAGEINCLUDE *.asp
+PAGEINCLUDE *.jsp
+PAGEINCLUDE *.cfm
+PAGEINCLUDE *.pl
+PAGEINCLUDE *.php
+PAGEINCLUDE *.pdf
+PAGEINCLUDE *.doc
+ROBOTINCLUDE REGEXPI:robot
+ROBOTINCLUDE REGEXPI:spider
+ROBOTINCLUDE REGEXPI:crawler
+ROBOTINCLUDE Googlebot*
+ROBOTINCLUDE Infoseek*
+ROBOTINCLUDE Scooter*
+ROBOTINCLUDE Slurp*
+ROBOTINCLUDE Ultraseek*i' > /home/$bash/etc/analog.conf");
+
+	// grab all domains and re-write analog cronjob
+	$results = mque("select * from domains");
+	$cron = "#!/bin/sh\n\n";
+
+	while( $domain = mysql_fetch_array($result) ) {
+		$cron += "/usr/bin/analog -G +g/home/" . $domain['bash'] . "/etc/analog.conf\n";
+	}
+
+	// write file and set default permissions
+	exec("echo '$cron' > /etc/cron.daily/analog");
+	exec("chmod 755 /etc/cron.daily/analog");
 }
 ?>
