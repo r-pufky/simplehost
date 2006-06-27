@@ -51,7 +51,8 @@ function add($domain) {
 	// create the bash user, default directories, and base files
 	exec("adduser --disabled-login --gecos '$domain' $bash");
 	exec("addgroup $bash www-data");
-	exec("mkdir -p /home/$bash/www/$domain/admin/analog/images /home/$bash/www/$domain/admin/analog/reports /home/$bash/www/$domain/admin/phpmyadmin");
+	exec("mkdir -p /home/$bash/www/$domain/admin/analog/images /home/$bash/www/$domain/admin/analog/reports");
+	exec("ln -s /usr/share/phpmyadmin /home/$bash/www/$domain/admin");
 	exec("mkdir /home/$bash/backup /home/$bash/logs /home/$bash/etc");
 	write_admin($results['id']);
 	write_apache2($ip,$bash,$domain);
@@ -341,7 +342,7 @@ AuthType Basic
 AuthName " . $results['domain'] . "
 AuthUserFile /home/" . $results['bash'] . "/etc/htpasswd
 Require valid-user
-Options indexes' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/.htaccess");
+Options indexes FollowSymLinks' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/.htaccess");
 
 	// write simple administration links for idiots
 	exec("echo '<HTML>
