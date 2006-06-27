@@ -26,7 +26,7 @@ echo -n "done."
 echo -e -n "\nCreating hosting database (will be prompted for root database password)...\n"
 mysql -u root -p -e 'create database DB_NAME'
 mysql -u root -p -e "grant all privileges on DB_NAME.* to 'root'@'localhost'"
-mysql -u root -p DB_PASSWORD < /root/bin/includes/admin.dump
+mysql -u root -p DB_PASSWORD < /root/bin/includes/mysql.dump
 
 # setup cronjob for backing mysql databases
 echo -e -n "\nSetting up cronjob for daily mysql database backup... "

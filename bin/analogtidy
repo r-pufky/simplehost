@@ -1,0 +1,41 @@
+#!/usr/bin/php4
+<?
+/*
+  Copyright 2006, Robert Pufky
+  Written 06-26-2006
+
+  Analog cronjob cleanup script
+*/
+
+// we must be root to run this script
+if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
+
+// proper arguments passed?
+if( $_SERVER['argc'] != 3 ) { die("Invalid command line arguments"); }
+$bash = $argv[1];
+$domain = $argv[2];
+
+// grab dates and set path
+$path = "/home/$bash/www/$domain/admin/analog";
+$date = date("Y-m-d");
+
+// create a directory with today's date
+@exec("mkdir $path/reports/$date 2>&1 > /dev/null");
+// copy images created for that report to current directory
+@exec("mv $path/browrep.png $path/reports/$date/browrep.png 2>&1 > /dev/null");
+@exec("mv $path/browsum.png $path/reports/$date/browsum.png 2>&1 > /dev/null");
+@exec("mv $path/code.png $path/reports/$date/code.png 2>&1 > /dev/null");
+@exec("mv $path/dir.png $path/reports/$date/dir.png 2>&1 > /dev/null");
+@exec("mv $path/dom.png $path/reports/$date/dom.png 2>&1 > /dev/null");
+@exec("mv $path/fail.png $path/reports/$date/fail.png 2>&1 > /dev/null");
+@exec("mv $path/org.png $path/reports/$date/org.png 2>&1 > /dev/null");
+@exec("mv $path/os.png $path/reports/$date/os.png 2>&1 > /dev/null");
+@exec("mv $path/refsite.png $path/reports/$date/refsite.png 2>&1 > /dev/null");
+@exec("mv $path/req.png $path/reports/$date/req.png 2>&1 > /dev/null");
+@exec("mv $path/searchq.png $path/reports/$date/searchq.png 2>&1 > /dev/null");
+@exec("mv $path/searchw.png $path/reports/$date/searchw.png 2>&1 > /dev/null");
+@exec("mv $path/size.png $path/reports/$date/size.png 2>&1 > /dev/null");
+@exec("mv $path/type.png $path/reports/$date/type.png 2>&1 > /dev/null");
+// copy the report itself over
+@exec("mv $path/index.html $path/reports/$date/index.html 2>&1 > /dev/null");
+?>

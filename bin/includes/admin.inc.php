@@ -51,7 +51,7 @@ function add($domain) {
 	// create the bash user, default directories, and base files
 	exec("adduser --disabled-login --gecos '$domain' $bash");
 	exec("addgroup $bash www-data");
-	exec("mkdir -p /home/$bash/www/$domain/admin/analog/images /home/$bash/www/$domain/admin/phpmyadmin");
+	exec("mkdir -p /home/$bash/www/$domain/admin/analog/images /home/$bash/www/$domain/admin/analog/reports /home/$bash/www/$domain/admin/phpmyadmin");
 	exec("mkdir /home/$bash/backup /home/$bash/logs /home/$bash/etc");
 	write_admin($results['id']);
 	write_apache2($ip,$bash,$domain);
@@ -346,7 +346,7 @@ Options indexes' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "
 	// write simple administration links for idiots
 	exec("echo '<HTML>
 <body>
-<a href='analog/'>Analog log files</a><br>
+<a href='analog/reports/'>Analog log files</a><br><br>
 <a href='phpmyadmin/index.php'>phpmyadmin</a>
 </body>
 </HTML>' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/index.html");
@@ -391,137 +391,93 @@ Function write_analog($bash,$domain) {
 #
 # Goto http://www.rix-web.com/analyzer/ for an automatic configuration file maker!
 #
-LOGFILE /home/$bash/logs/*.log
+LOGFILE /home/$bash/logs/*access.log
 OUTPUT HTML
-OUTFILE /home/$bash/www/admin/analog/%y%M%D-Statistics.html
-DNS LOOKUP
-general ON
-Monthly ON
-Weekly ON
-Dailysum ON
-DAILYREP OFF
-HOURLYSUM ON
-DOMAIN ON
-ORGANISATION ON
-DIRECTORY ON
-FILETYPE ON
-SIZE ON
-REQUEST ON
-REFERRER ON
-FAILURE ON
-SEARCHQUERY ON
-SEARCHWORD ON
-BROWSERSUM ON
-OSREP ON
-STATUS ON
-DOMSORTBY BYTES
-DOMFLOOR 0b
-ORGSORTBY REQUESTS
-ORGFLOOR 0r
-DIRSORTBY BYTES
-DIRFLOOR 0b
-REQSORTBY REQUESTS
-REQFLOOR 0r
-REQINCLUDE *
-REFSORTBY PAGES
-REFFLOOR 0p
-FROM
-TO
-FILEINCLUDE
-FILEEXCLUDE
-HOSTNAME $domain
+OUTFILE /home/$bash/www/$domain/admin/analog/index.html
+HOSTNAME \"$domain\"
 HOSTURL http://www.$domain
-#<----------STATIC VARIABLES --------------------->
+IMAGEDIR ../../images/
+DNS LOOKUP
+REQINCLUDE pages
+REQLINKINCLUDE pages
+REFLINKINCLUDE *
+REDIRREFLINKINCLUDE *
+FAILREFLINKINCLUDE *
+SUBBROW */*
+SUBTYPE *.gz,*.Z
 
-IMAGEDIR images/
-DNSGOODHOURS 100000
-DNSBADHOURS 336
-DNSTIMEOUT 10
-DNSLOCKFILE dnslock
-# A list of search engines
+PAGEINCLUDE *.php
+
+# More SEARCHENGINE commands can be found at
+#   http://www.analog.cx/helpers/#conffiles
+SEARCHENGINE http://*google.*/* q,as_q,as_epq,as_oq
 SEARCHENGINE http://*altavista.*/* q
 SEARCHENGINE http://*yahoo.*/* p
-SEARCHENGINE http://*google.*/* q
-SEARCHENGINE http://*lycos.*/* query
+SEARCHENGINE http://*lycos.*/* query,wfq
 SEARCHENGINE http://*aol.*/* query
 SEARCHENGINE http://*excite.*/* search
 SEARCHENGINE http://*go2net.*/* general
 SEARCHENGINE http://*metacrawler.*/* general
-SEARCHENGINE http://*msn.*/* MT
-SEARCHENGINE http://*hotbot.com/* MT
+SEARCHENGINE http://*msn.*/* q,MT
 SEARCHENGINE http://*netscape.*/* search
 SEARCHENGINE http://*looksmart.*/* key
-SEARCHENGINE http://*infoseek.*/* qt
-SEARCHENGINE http://*webcrawler.*/* search,searchText
-SEARCHENGINE http://*goto.*/* Keywords
-SEARCHENGINE http://*snap.*/* keyword
+SEARCHENGINE http://*webcrawler.*/* qkw,search,searchText
+SEARCHENGINE http://*overture.*/* Keywords
+SEARCHENGINE http://*teoma.*/* q
+SEARCHENGINE http://*infospace.*/* qkw
+SEARCHENGINE http://*alltheweb.*/* q
 SEARCHENGINE http://*dogpile.*/* q
-SEARCHENGINE http://*askjeeves.*/* ask
 SEARCHENGINE http://*ask.*/* ask
-SEARCHENGINE http://*aj.*/* ask
-SEARCHENGINE http://*directhit.*/* qry
 SEARCHENGINE http://*alltheweb.*/* query
 SEARCHENGINE http://*northernlight.*/* qr
 SEARCHENGINE http://*nlsearch.*/* qr
 SEARCHENGINE http://*dmoz.*/* search
-SEARCHENGINE http://*newhoo.*/* search
-SEARCHENGINE http://*netfind.*/* query,search,s
 SEARCHENGINE http://*/netfind* query
 SEARCHENGINE http://*/pursuit query
-BROWOUTPUTALIAS Mozilla Netscape
-BROWOUTPUTALIAS \"Mozilla (compatible)\" \"Netscape (compatible)\"
-BROWOUTPUTALIAS IWENG AOL
-TYPEOUTPUTALIAS .html \".html [Hypertext Markup Language]\"
-TYPEOUTPUTALIAS .htm \".htm [Hypertext Markup Language]\"
-TYPEOUTPUTALIAS .shtml \".shtml [Server-parsed HTML]\"
-TYPEOUTPUTALIAS .ps \".ps [PostScript]\"
-TYPEOUTPUTALIAS .gz \".gz [Gzip compressed files]\"
-TYPEOUTPUTALIAS .tar.gz \".tar.gz [Compressed archives]\"
-TYPEOUTPUTALIAS .jpg \".jpg [JPEG graphics]\"
-TYPEOUTPUTALIAS .jpeg \".jpeg [JPEG graphics]\"
-TYPEOUTPUTALIAS .gif \".gif [GIF graphics]\"
-TYPEOUTPUTALIAS .png \".png [PNG graphics]\"
-TYPEOUTPUTALIAS .txt \".txt [Plain text]\"
-TYPEOUTPUTALIAS .cgi \".cgi [CGI scripts]\"
-TYPEOUTPUTALIAS .pl \".pl [Perl scripts]\"
-TYPEOUTPUTALIAS .css \".css [Cascading Style Sheets]\"
-TYPEOUTPUTALIAS .class \".class [Java class files]\"
-TYPEOUTPUTALIAS .pdf \".pdf [Adobe Portable Document Format]\"
-TYPEOUTPUTALIAS .zip \".zip [Zip archives]\"
-TYPEOUTPUTALIAS .hqx \".hqx [Macintosh archives]\"
-TYPEOUTPUTALIAS .exe \".exe [Executables]\"
-TYPEOUTPUTALIAS .wav \".wav [WAV sound files]\"
-TYPEOUTPUTALIAS .avi \".avi [AVI movies]\"
-TYPEOUTPUTALIAS .arc \".arc [Compressed archives]\"
-TYPEOUTPUTALIAS .mid \".mid [MIDI sound files]\"
-TYPEOUTPUTALIAS .mp3 \".mp3 [MP3 sound files]\"
-TYPEOUTPUTALIAS .doc \".doc [Microsoft Word document]\"
-TYPEOUTPUTALIAS .rtf \".rtf [Rich Text Format]\"
-TYPEOUTPUTALIAS .mov \".mov [Quick Time movie]\"
-TYPEOUTPUTALIAS .mpg \".mpg [MPEG movie]\"
-TYPEOUTPUTALIAS .mpeg \".mpeg [MPEG movie]\"
-TYPEOUTPUTALIAS .asp \".asp [Active Server Pages]\"
-TYPEOUTPUTALIAS .jsp \".jsp [Java Server Pages]\"
-TYPEOUTPUTALIAS .cfm \".cfm [Cold Fusion]\"
-TYPEOUTPUTALIAS .php \".php [PHP]\"
-TYPEOUTPUTALIAS .js \".js [JavaScript code]\"
-TYPEOUTPUTALIAS .ico \".ico [Icon]\"
-PAGEINCLUDE *.shtml
-PAGEINCLUDE *.asp
-PAGEINCLUDE *.jsp
-PAGEINCLUDE *.cfm
-PAGEINCLUDE *.pl
-PAGEINCLUDE *.php
-PAGEINCLUDE *.pdf
-PAGEINCLUDE *.doc
 ROBOTINCLUDE REGEXPI:robot
 ROBOTINCLUDE REGEXPI:spider
 ROBOTINCLUDE REGEXPI:crawler
 ROBOTINCLUDE Googlebot*
 ROBOTINCLUDE Infoseek*
 ROBOTINCLUDE Scooter*
-ROBOTINCLUDE Slurp*
-ROBOTINCLUDE Ultraseek*i' > /home/$bash/etc/analog.conf");
+ROBOTINCLUDE *Slurp*
+ROBOTINCLUDE *Validator*
+ROBOTINCLUDE Ultraseek*
+TYPEALIAS .html    \".html [Hypertext Markup Language]\"
+TYPEALIAS .htm     \".htm  [Hypertext Markup Language]\"
+TYPEALIAS .shtml   \".shtml [Server-parsed HTML]\"
+TYPEALIAS .ps      \".ps   [PostScript]\"
+TYPEALIAS .gz      \".gz   [Gzip compressed files]\"
+TYPEALIAS .tar.gz  \".tar.gz [Compressed archives]\"
+TYPEALIAS .jpg     \".jpg  [JPEG graphics]\"
+TYPEALIAS .jpeg    \".jpeg [JPEG graphics]\"
+TYPEALIAS .gif     \".gif  [GIF graphics]\"
+TYPEALIAS .png     \".png  [PNG graphics]\"
+TYPEALIAS .txt     \".txt  [Plain text]\"
+TYPEALIAS .cgi     \".cgi  [CGI scripts]\"
+TYPEALIAS .pl      \".pl   [Perl scripts]\"
+TYPEALIAS .css     \".css  [Cascading Style Sheets]\"
+TYPEALIAS .class   \".class [Java class files]\"
+TYPEALIAS .pdf     \".pdf  [Adobe Portable Document Format]\"
+TYPEALIAS .zip     \".zip  [Zip archives]\"
+TYPEALIAS .hqx     \".hqx  [Macintosh BinHex files]\"
+TYPEALIAS .exe     \".exe  [Executables]\"
+TYPEALIAS .wav     \".wav  [WAV sound files]\"
+TYPEALIAS .avi     \".avi  [AVI movies]\"
+TYPEALIAS .arc     \".arc  [Compressed archives]\"
+TYPEALIAS .mid     \".mid  [MIDI sound files]\"
+TYPEALIAS .mp3     \".mp3  [MP3 sound files]\"
+TYPEALIAS .ogg     \".ogg  [OGG sound files]\"
+TYPEALIAS .doc     \".doc  [Microsoft Word document]\"
+TYPEALIAS .rtf     \".rtf  [Rich Text Format]\"
+TYPEALIAS .mov     \".mov  [Quick Time movie]\"
+TYPEALIAS .mpg     \".mpg  [MPEG movie]\"
+TYPEALIAS .mpeg    \".mpeg [MPEG movie]\"
+TYPEALIAS .asp     \".asp  [Active Server Pages]\"
+TYPEALIAS .jsp     \".jsp  [Java Server Pages]\"
+TYPEALIAS .cfm     \".cfm  [Cold Fusion]\"
+TYPEALIAS .php     \".php  [PHP]\"
+TYPEALIAS .js      \".js   [JavaScript code]\"' > /home/$bash/etc/analog.conf");
 	exec("chmod 640 /home/$bash/etc/analog.conf");
 
 	// copy over image files to analog directory
@@ -532,7 +488,8 @@ ROBOTINCLUDE Ultraseek*i' > /home/$bash/etc/analog.conf");
 	$cron = "#!/bin/sh\n\n";
 
 	while( $domain = mysql_fetch_array($results) ) {
-		$cron = $cron . "/usr/bin/analog -G +g/home/" . $domain['bash'] . "/etc/analog.conf\n";
+		$cron = $cron . "/usr/bin/analog -G +g/home/" . $domain['bash'] . "/etc/analog.conf 2> /dev/null\n";
+		$cron = $cron . "/root/bin/analogtidy " . $domain['bash'] . " " . $domain['domain'] . "\n";
 	}
 
 	// write file and set default permissions
