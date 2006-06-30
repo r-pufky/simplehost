@@ -44,5 +44,8 @@ echo("\nSetup inital permission for gallery2.");
 mque("update domains set gallery2='Y' where id='" . $results['id'] . "'");
 mlog("gallerypresetup.insertgallery",!FATAL,"Inserted " . $results['domain'] . " gallery2 table information.");
 mlog("gallerypresetup.main",!FATAL,"Setup inital gallery2 for " . $results['domain']);
-echo("\n\nNavigate to http://$serverip/gallery2 to finish configuration for this domain\n\nRemember to run 'gallerypostsetup' afterwards! (This is critical)\n");
+echo("\n\nNavigate to https://$serverip/gallery2 (in Firefox) to finish configuration for this domain");
+echo("\nGallery 2 direcotry: /home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2/");
+echo("\nGallery 2 data dir:  /home/" . $results['bash'] . "/g2data/");
+echo("\n\nRemember to run 'gallerypostsetup' afterwards! (This is critical)\n");
 ?>

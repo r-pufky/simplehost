@@ -32,7 +32,7 @@ $id = $results['id'];
 $subdomain = getinput("Enter desired subdomain [i.e. test.abc.com -> test]");
 
 // verify subdomain does not exist
-if( $results = mysql_fetch_array(mque("select * from subdomains where subdomain='$subdomain'")) ) { mlog("subdomain.checksubdomain",FATAL,"Subdomain $subdomain.$domain already exists!"); }
+if( $results = mysql_fetch_array(mque("select * from subdomains where subdomain='$subdomain' and did='$id'")) ) { mlog("subdomain.checksubdomain",FATAL,"Subdomain $subdomain.$domain already exists!"); }
 if( file_exists("/home/$bash/www/$subdomain") ) { mlog("subdomain.checkdirectory",FATAL,"/home/$bash/www/$subdomain already exists!"); }
 
 // see if this is the first subdomain created

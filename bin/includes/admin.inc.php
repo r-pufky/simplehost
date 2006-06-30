@@ -125,6 +125,7 @@ function del($domain) {
 	mque("delete from ports where did='" . $results['id'] . "'");
 	mque("delete from subdomains where did='" . $results['id'] . "'");
 	mque("delete from domains where id='" . $results['id'] . "'");
+	mque("delete from mysql.db where Host='localhost' and Db='" . $results['mysql'] . "'");
 	echo("\nRemoved domain from database.");
 	
 	// reload configuration files for sudoers and ports.conf
@@ -181,12 +182,13 @@ function write_apache2($ip,$login,$domain) {
 function write_configs() {
 	global $serverip;
 	global $serverport;
+	global $serverport2;
 
 	// grab a list of domains
 	$domains = mque("select * from domains");
 
 	// set config files to their default state
-	exec("echo '' > /etc/sudoers;echo 'Listen $serverip:$serverport' > /etc/apache2/ports.conf");
+	exec("echo '' > /etc/sudoers;echo -e 'Listen $serverip:$serverport\nListen $serverip:$serverport2' > /etc/apache2/ports.conf");
 
 	// go through each domain
 	while( $domain = mysql_fetch_array($domains) ) {
@@ -218,6 +220,8 @@ function write_interfaces($ip,$num,$domain) {
 //           string - the mysql user name
 //           string - the mysql password
 Function write_gallery($domain,$bash,$mysql,$pass) {
+	global $serverip;
+
 	// generate a random password for the core password
 	$gallerycore = "";
 	$charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdfghjklmnpqrstvwxyz"; 
@@ -248,7 +252,7 @@ Function write_gallery($domain,$bash,$mysql,$pass) {
 		// if it is a user line, then write it with the user information
 		if( strpos($line, "\$storeConfig['username'] = '") !== false ) {
 			if( fwrite($fpipe, "\$storeConfig['username'] = '$mysql';\n") === false ) {
-				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write password to configuration file!");
+				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write username to configuration file!");
 			}
 		// if it is a password line then write it with users information
 		} else if( strpos($line, "\$storeConfig['password'] = '") !== false ) {
@@ -257,9 +261,13 @@ Function write_gallery($domain,$bash,$mysql,$pass) {
 			}
 		// randomize the core password for gallery (used if user forgets their password)
 		} else if( strpos($line, "\$gallery->setConfig('setup.password',") !== false ) {
-			echo "found setup";
 			if( fwrite($fpipe, "\$gallery->setConfig('setup.password','$gallerycore');\n") === false ) {
 				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write core password to configuration file!");
+			}
+		// point the installation to the base gallery2 site
+		} else if( strpos($line,"\$gallery->setConfig('galleryBaseUrl'") !== false ) {
+			if( fwrite($fpipe, "\$gallery->setConfig('galleryBaseUrl', 'http://$serverip/gallery2/');\n") === false ) {
+				mlog("gallerypostsetup.writeconfig",FATAL,"Could not write core gallery2 server to configuration file!");
 			}
 		} else {
 			// we don't have the password line, just write it
@@ -385,7 +393,7 @@ Function write_logrotate($bash,$domain) {
 // Requires: string - the bash user name
 //           string - the domain name
 Function write_analog($bash,$domain) {
-	exec("echo '#You REALLY shoud have NO NEED to modify this file.
+	exec("echo '# You REALLY shoud have NO NEED to modify this file.
 # If you mess up the configuration, your website analysis will STOP WORKING!
 # Advanced user only please!  Contact Gabe or Bob with questions!
 # This script is automatically run everyday at 11:30 PM

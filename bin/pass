@@ -22,7 +22,7 @@ $domain = str_replace("-",".",strtolower($argv[1]));
 if( !$results = mysql_fetch_array(mque("select * from domains where domain='" . $domain . "'")) ) { mlog("pass.checkdomain",FATAL,"$domain is not valid!"); }
 
 mlog("pass.main",!FATAL,"$domain requested new password.");
-echo("Changing password... ");
+echo("Changing password... \n");
 
 $passpath = "/home/" . $results['bash'] . "/passwd";
 
