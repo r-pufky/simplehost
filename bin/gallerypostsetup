@@ -35,6 +35,7 @@ write_htgallery($results['bash'],$domain);
 $gallerypath = "/home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2";
 exec("chown -R " . $results['bash'] . ":www-data $gallerypath");
 exec("chmod -R 640 $gallerypath");
+exec("chmod 660 $gallerypath/.htaccess");
 exec("chmod 750 $gallerypath");
 exec("chmod 750 $gallerypath/upgrade");
 
