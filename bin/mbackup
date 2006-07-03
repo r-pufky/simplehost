@@ -14,8 +14,8 @@
 if( exec("whoami") != "root" ) { die("\nMust be root to run this script.\n"); }
 
 // load configurations
-require("includes/config.inc.php");
-require("includes/functions.inc.php");
+require("/root/bin/includes/config.inc.php");
+require("/root/bin/includes/functions.inc.php");
 
 mlog("mbackup.main",!FATAL,"Initalizing backup of all domains.");
 
