@@ -33,6 +33,9 @@ function add($domain) {
 	// create bash name and mysql name
 	$bash = str_replace(" ","",str_replace(".","-",$domain));
 	$mysql = str_replace("-","_",$bash);
+
+	// the mysql name can only be 16 character long, take the first 16
+	if( strlen($mysql) > 16 ) { $mysql = substr($mysql, 0, 16); }
 			 
 	$email = mysql_real_escape_string(getinput("Enter contact e-mail"));
 	$name = getinput("Enter contact name");
