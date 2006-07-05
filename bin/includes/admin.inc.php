@@ -22,6 +22,13 @@ function add($domain) {
 	$results = mque("select * from domains where domain='$domain'");
 	if( mysql_num_rows($results) != 0 ) { mlog("hostmodify.checkduplicatedomain",FATAL,"$domain already hosted!"); }
 		
+	// show used IP's
+	echo "\nIP's in use are (use the next IP not listed):\n";
+	$showlist = mque("select * from domains order by id");
+	while( $showrow = mysql_fetch_array($showlist) ) {
+		echo "$showrow[ip]\n";
+	}
+	
 	// prompt and verify IP address
 	$ip = getinput("Enter site IP address");
 	if( ip2long($ip) == -1 ) { mlog("hostmodify.checkip",FATAL,"$ip is NOT valid!"); }
