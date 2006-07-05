@@ -32,7 +32,7 @@ write_gallery($domain,$results['bash'],$results['mysql'],$results['password']);
 write_htgallery($results['bash'],$domain);
 
 // secure gallery2 installation
-$gallerypath = "/home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2";
+$gallerypath = "/home/" . $results['bash'] . "/www/www/gallery2";
 exec("chown -R " . $results['bash'] . ":www-data $gallerypath");
 exec("chmod -R 640 $gallerypath");
 exec("chmod 660 $gallerypath/.htaccess");

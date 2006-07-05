@@ -16,7 +16,7 @@ $bash = $argv[1];
 $domain = $argv[2];
 
 // grab dates and set path
-$path = "/home/$bash/www/$domain/admin/analog";
+$path = "/home/$bash/www/www/admin/analog";
 $date = date("Y-m-d");
 
 // create a directory with today's date

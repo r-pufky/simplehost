@@ -61,8 +61,8 @@ function add($domain) {
 	// create the bash user, default directories, and base files
 	exec("adduser --disabled-login --gecos '$domain' $bash");
 	exec("addgroup $bash www-data");
-	exec("mkdir -p /home/$bash/www/$domain/admin/analog/images /home/$bash/www/$domain/admin/analog/reports");
-	exec("ln -s /usr/share/phpmyadmin /home/$bash/www/$domain/admin");
+	exec("mkdir -p /home/$bash/www/www/admin/analog/images /home/$bash/www/www/admin/analog/reports");
+	exec("ln -s /usr/share/phpmyadmin /home/$bash/www/www/admin");
 	exec("mkdir /home/$bash/backup /home/$bash/logs /home/$bash/etc");
 	write_admin($results['id']);
 	write_apache2($ip,$bash,$domain);
@@ -77,7 +77,7 @@ function add($domain) {
 	exec("chmod o+rx /home/$bash");
 	exec("chmod -R 750 /home/$bash/backup /home/$bash/www /home/$bash/etc");
 	exec("chmod 660 /home/$bash/etc/*");
-	exec("chmod 660 /home/$bash/www/$domain/admin/.htaccess");
+	exec("chmod 660 /home/$bash/www/www/admin/.htaccess");
 	exec("chmod 600 /home/$bash/logs/*");
 	exec("chown -R $bash:www-data /home/$bash/www /home/$bash/etc");
 	exec("chown -R $bash:$bash /home/$bash/backup /home/$bash/logs");
@@ -159,7 +159,7 @@ function write_apache2($ip,$login,$domain) {
 	exec("echo '<VirtualHost $ip:80>
   ServerName $domain
   ServerAdmin webmaster@$domain
-  DocumentRoot /home/$login/www/$domain
+  DocumentRoot /home/$login/www/www
   ErrorLog /home/$login/logs/$domain-error.log
   CustomLog /home/$login/logs/$domain-access.log common
   Options none
@@ -177,7 +177,7 @@ function write_apache2($ip,$login,$domain) {
   SSLCipherSuite HIGH:MEDIUM
   ServerName $domain
   ServerAdmin webmaster@$domain
-  DocumentRoot /home/$login/www/$domain
+  DocumentRoot /home/$login/www/www
   ErrorLog /home/$login/logs/ssl-$domain-error.log
   CustomLog /home/$login/logs/ssl-$domain-access.log common
   Options none
@@ -248,7 +248,7 @@ Function write_gallery($domain,$bash,$mysql,$pass) {
 	}
 
 	// read configuration file for gallery2 and make backup
-	$filepath = "/home/$bash/www/$domain/gallery2/config.php";
+	$filepath = "/home/$bash/www/www/gallery2/config.php";
 	if( !file_exists($filepath) ) { mlog("gallerypostsetup.writeconfig",FATAL,"Gallery configuration file does not exist!"); }
 	$config = file($filepath);
 	exec("cp $filepath /home/$bash/gallery.config.backup");
@@ -341,7 +341,7 @@ Function write_htgallery($bash,$domain) {
 </Files>
 <Files ~ \"config.php\">
   Deny from all
-</Files>' > /home/$bash/www/$domain/gallery2/.htaccess");
+</Files>' > /home/$bash/www/www/gallery2/.htaccess");
 }
 
 // Function: write_admin
@@ -360,7 +360,7 @@ AuthType Basic
 AuthName " . $results['domain'] . "
 AuthUserFile /home/" . $results['bash'] . "/etc/htpasswd
 Require valid-user
-Options indexes FollowSymLinks' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/.htaccess");
+Options indexes FollowSymLinks' > /home/" . $results['bash'] . "/www/www/admin/.htaccess");
 
 	// write simple administration links for idiots
 	exec("echo '<HTML>
@@ -368,7 +368,7 @@ Options indexes FollowSymLinks' > /home/" . $results['bash'] . "/www/" . $result
 <a href='analog/reports/'>Analog log files</a><br><br>
 <a href='phpmyadmin/index.php'>phpmyadmin</a>
 </body>
-</HTML>' > /home/" . $results['bash'] . "/www/" . $results['domain'] . "/admin/index.html");
+</HTML>' > /home/" . $results['bash'] . "/www/www/admin/index.html");
 }
 
 // Function: write_logrotate
@@ -412,7 +412,7 @@ Function write_analog($bash,$domain) {
 #
 LOGFILE /home/$bash/logs/*access.log
 OUTPUT HTML
-OUTFILE /home/$bash/www/$domain/admin/analog/index.html
+OUTFILE /home/$bash/www/www/admin/analog/index.html
 HOSTNAME \"$domain\"
 HOSTURL http://www.$domain
 IMAGEDIR ../../images/
@@ -500,7 +500,7 @@ TYPEALIAS .js      \".js   [JavaScript code]\"' > /home/$bash/etc/analog.conf");
 	exec("chmod 640 /home/$bash/etc/analog.conf");
 
 	// copy over image files to analog directory
-	exec("cp /usr/share/analog/images/* /home/$bash/www/$domain/admin/analog/images/");
+	exec("cp /usr/share/analog/images/* /home/$bash/www/www/admin/analog/images/");
 
 	// grab all domains and re-write analog cronjob
 	if( !$results = mque("select * from domains") ) { mlog("add.writeanalog",!FATAL,"Could not find any domains to write!"); }

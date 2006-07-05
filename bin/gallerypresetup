@@ -29,14 +29,14 @@ if( $results['gallery2'] != 'N' ) { mlog("gallerypresetup.checkgallery",FATAL,"G
 // disable site, and create gallery directories
 exec("a2dissite " . $results['domain']);
 exec("apache2ctl graceful");
-exec("mkdir /home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2");
+exec("mkdir /home/" . $results['bash'] . "/www/www/gallery2");
 exec("mkdir /home/" . $results['bash'] . "/g2data");
 echo("\nDisabled site to prevent security breach during setup.");
 
 // secure directories
-exec("chown " . $results['bash'] . ":www-data /home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2");
+exec("chown " . $results['bash'] . ":www-data /home/" . $results['bash'] . "/www/www/gallery2");
 exec("chown " . $results['bash'] . ":www-data /home/" . $results['bash'] . "/g2data");
-exec("chmod g+w /home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2");
+exec("chmod g+w /home/" . $results['bash'] . "/www/www/gallery2");
 exec("chmod g+w /home/" . $results['bash'] . "/g2data");
 echo("\nSetup inital permission for gallery2.");
 
@@ -45,7 +45,7 @@ mque("update domains set gallery2='Y' where id='" . $results['id'] . "'");
 mlog("gallerypresetup.insertgallery",!FATAL,"Inserted " . $results['domain'] . " gallery2 table information.");
 mlog("gallerypresetup.main",!FATAL,"Setup inital gallery2 for " . $results['domain']);
 echo("\n\nNavigate to https://$serverip/gallery2 (in Firefox) to finish configuration for this domain");
-echo("\nGallery 2 direcotry: /home/" . $results['bash'] . "/www/" . $results['domain'] . "/gallery2/");
+echo("\nGallery 2 directory: /home/" . $results['bash'] . "/www/www/gallery2/");
 echo("\nGallery 2 data dir:  /home/" . $results['bash'] . "/g2data/");
 echo("\n\nRemember to run 'gallerypostsetup' afterwards! (This is critical)\n");
 ?>
