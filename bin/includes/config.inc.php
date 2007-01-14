@@ -7,9 +7,9 @@
 */
 
 // database configuration information
-$dbuser = 'DB_USER';
-$dbname = 'DB_NAME';
-$dbserver = 'localhost';
+$dbuser = 'user';
+$dbname = 'dbname';
+$dbserver = 'server';
 
 // root password
 $rootpass = 'ENTER_PASSWORD';
